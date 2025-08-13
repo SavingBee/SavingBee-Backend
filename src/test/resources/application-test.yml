@@ -1,0 +1,22 @@
+spring:
+  config:
+    import:
+      - classpath:application-secret.properties  # 보안 파일 import
+
+  profiles:
+    active: test
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/savingbee_test
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
