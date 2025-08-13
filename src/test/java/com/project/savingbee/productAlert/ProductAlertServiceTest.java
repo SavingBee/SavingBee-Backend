@@ -157,7 +157,7 @@ class ProductAlertServiceTest {
 
   @Test
   @DisplayName("알림 조건 설정 실패")
-  void failCreateAlertSettings() throws BadRequestException {
+  void failCreateAlertSettings() {
     //given
     long userId = 3L;
 
@@ -243,14 +243,9 @@ class ProductAlertServiceTest {
 
   @Test
   @DisplayName("알림 조건 수정 실패")
-  void failUpdateAlertSettings() throws Exception {
+  void failUpdateAlertSettings() {
     //given
     long userId = 3L;
-
-    // 기존 저장된 설정
-    ProductAlertSetting productAlertSetting = ProductAlertSetting.builder()
-        .userId(userId)
-        .build();
 
     AlertSettingsRequestDto alertSettingsRequestDto = AlertSettingsRequestDto.builder()
         .minAmount(BigInteger.valueOf(1000000))
