@@ -1,6 +1,7 @@
 package com.project.savingbee.common.entity;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,25 +35,15 @@ public class ProductAlertSetting {
 
   private Boolean interestCalcCompound; // 이자계산방식_복리
 
-  private Boolean rateTypeFixed; // 금리 유형_고정형
-
-  private Boolean rateTypeVariable; // 금리 유형_변동형
-
   private Integer maxSaveTerm; // 예치 기간
 
-  private Boolean joinTypeFixed; // 가입 유형_정기금
+  private BigInteger minAmount; // 최소 가입 금액
 
-  private Boolean joinTypeFlexible; // 가입 유형_자유적립
-
-  private BigDecimal minAmount; // 최소 가입 금액
-
-  private BigDecimal maxLimit; // 최대 한도
+  private BigInteger maxLimit; // 최대 한도
 
   private Boolean rsrvTypeFlexible; // 자유적립
 
   private Boolean rsrvTypeFixed; // 정액적립
-
-  private Boolean rsrvTypeOnce; // 일시납
 
   @Enumerated(EnumType.STRING)
   private AlertType alertType; // 알림 유형
