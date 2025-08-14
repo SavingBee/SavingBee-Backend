@@ -1,5 +1,6 @@
 package com.project.savingbee.common.entity;
 
+import com.project.savingbee.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
