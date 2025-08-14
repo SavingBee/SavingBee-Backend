@@ -2,6 +2,8 @@ package com.project.savingbee.common.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import com.project.savingbee.domain.user.entity.User;
 import lombok.Getter;
 import lombok.Setter;
 
