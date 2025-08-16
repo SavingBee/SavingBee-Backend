@@ -2,6 +2,7 @@ package com.project.savingbee.domain.user.entity;
 
 import com.project.savingbee.common.entity.ProductAlertSetting;
 import com.project.savingbee.common.entity.UserProduct;
+import com.project.savingbee.domain.user.dto.UserRequestDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -73,4 +74,9 @@ public class User {
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private List<ProductAlertSetting> productAlertSettings; // 상품 알림 설정들
+
+  public void updateUser(UserRequestDTO dto) {
+    this.email = dto.getEmail();
+    this.nickname = dto.getNickname();
+  }
 }

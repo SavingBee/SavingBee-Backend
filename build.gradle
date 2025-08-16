@@ -52,12 +52,18 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
+
 }
 
 
 test {
+
+    // JUnit5로 실행
+
     useJUnitPlatform()
 
     // 테스트 실행 시 시스템 속성 설정
