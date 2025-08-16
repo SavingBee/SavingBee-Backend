@@ -1,10 +1,11 @@
 package com.project.savingbee.domain.user.service;
 
 import com.project.savingbee.domain.user.dto.UserRequestDTO;
-import com.project.savingbee.domain.user.entity.User;
+import com.project.savingbee.domain.user.entity.UserEntity;
 import com.project.savingbee.domain.user.entity.UserRoleType;
 import com.project.savingbee.domain.user.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -38,7 +39,7 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("이미 유저가 존재합니다.");
         }
 
-        User entity = User.builder()
+        UserEntity entity = UserEntity.builder()
                 .username(dto.getUsername())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .isLock(false)
@@ -57,10 +58,10 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        User entity = userRepository.findByUsernameAndIsLockAndIsSocial(username, false, false)
+        UserEntity entity = userRepository.findByUsernameAndIsLockAndIsSocial(username, false, false)
                 .orElseThrow(() -> new UsernameNotFoundException(username));
 
-        return org.springframework.security.core.userdetails.User.builder()// return USer.builder()로 하니까 .roles에 오류 뜸.
+        return User.builder()
                 .username(entity.getUsername())
                 .password(entity.getPassword())
                 .roles(entity.getRoleType().name())
@@ -79,7 +80,7 @@ public class UserService implements UserDetailsService {
         }
 
         // 조회
-        User entity = userRepository.findByUsernameAndIsLockAndIsSocial(dto.getUsername(), false, false)
+        UserEntity entity = userRepository.findByUsernameAndIsLockAndIsSocial(dto.getUsername(), false, false)
                 .orElseThrow(() -> new UsernameNotFoundException(dto.getUsername()));
 
         // 회원 정보 수정

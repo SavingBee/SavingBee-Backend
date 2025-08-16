@@ -1,7 +1,7 @@
 package com.project.savingbee.domain.user.service;
 
 import com.project.savingbee.domain.user.dto.UserRequestDTO;
-import com.project.savingbee.domain.user.entity.User;
+import com.project.savingbee.domain.user.entity.UserEntity;
 import com.project.savingbee.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +28,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
-class UserServiceUpdateUserTest {
+class UserServiceUpdateUserEntityTest {
 
     @Mock
     UserRepository userRepository;
@@ -85,7 +85,7 @@ class UserServiceUpdateUserTest {
                 .isInstanceOf(UsernameNotFoundException.class)
                 .hasMessageContaining("kim");
 
-        then(userRepository).should(never()).save(any(User.class));
+        then(userRepository).should(never()).save(any(UserEntity.class));
     }
 
     @Test
@@ -100,7 +100,7 @@ class UserServiceUpdateUserTest {
         dto.setEmail("new@example.com");
 
         // 엔티티 준비(필요 최소 필드만). 빌더가 없다면 생성자/세터로 생성해도 무방
-        User entity = User.builder()
+        UserEntity entity = UserEntity.builder()
                 .username("kim")
                 .password("encoded") // 아무 값
                 .build();
@@ -109,9 +109,9 @@ class UserServiceUpdateUserTest {
                 .willReturn(Optional.of(entity));
 
         // save가 호출되면 id가 채워진 엔티티를 반환하도록 모킹
-        given(userRepository.save(any(User.class))).willAnswer(inv -> {
-            User u = inv.getArgument(0);
-            Field id = User.class.getDeclaredField("id");
+        given(userRepository.save(any(UserEntity.class))).willAnswer(inv -> {
+            UserEntity u = inv.getArgument(0);
+            Field id = UserEntity.class.getDeclaredField("id");
             id.setAccessible(true);
             id.set(u, 10L);
             return u;
@@ -124,9 +124,9 @@ class UserServiceUpdateUserTest {
         assertThat(id).isEqualTo(10L);
 
         // 저장 시 넘긴 객체 캡처해서 실제로 save가 불렸는지 검증
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
         then(userRepository).should().save(captor.capture());
-        User saved = captor.getValue();
+        UserEntity saved = captor.getValue();
 
         // updateUser(dto)가 적용됐는지(가능한 범위에서) 검증
         // 실제 엔티티 필드 이름에 맞게 필요한 항목만 확인해도 됨
