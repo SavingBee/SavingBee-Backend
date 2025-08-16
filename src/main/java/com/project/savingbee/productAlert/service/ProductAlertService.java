@@ -1,7 +1,9 @@
-package com.project.savingbee.productAlert;
+package com.project.savingbee.productAlert.service;
 
 import com.project.savingbee.common.entity.ProductAlertSetting;
 import com.project.savingbee.common.repository.ProductAlertSettingRepository;
+import com.project.savingbee.productAlert.dto.AlertSettingsRequestDto;
+import com.project.savingbee.productAlert.dto.AlertSettingsResponseDto;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;

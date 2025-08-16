@@ -1,6 +1,5 @@
 package com.project.savingbee.common.entity;
 
-import com.project.savingbee.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

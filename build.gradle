@@ -24,7 +24,6 @@ repositories {
 }
 
 dependencies {
-    dependencies {
         // Core Spring Boot Starters
         implementation 'org.springframework.boot:spring-boot-starter-web'         // MVC, REST API
         implementation 'org.springframework.boot:spring-boot-starter-webflux'     // Reactive Web
@@ -54,8 +53,6 @@ dependencies {
         testImplementation 'org.mockito:mockito-junit-jupiter'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
-
-}
 
 test {
     // 테스트 실행 시 시스템 속성 설정

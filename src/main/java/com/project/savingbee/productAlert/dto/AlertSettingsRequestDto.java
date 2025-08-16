@@ -1,4 +1,4 @@
-package com.project.savingbee.productAlert;
+package com.project.savingbee.productAlert.dto;
 
 import com.project.savingbee.common.entity.ProductAlertSetting.AlertType;
 import jakarta.validation.constraints.DecimalMin;

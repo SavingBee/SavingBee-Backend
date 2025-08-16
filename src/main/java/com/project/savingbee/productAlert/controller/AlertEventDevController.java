@@ -4,7 +4,6 @@ import com.project.savingbee.productAlert.dto.AlertEventScanResponseDto;
 import com.project.savingbee.productAlert.service.AlertMatchService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

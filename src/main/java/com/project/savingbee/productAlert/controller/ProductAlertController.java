@@ -1,5 +1,8 @@
-package com.project.savingbee.productAlert;
+package com.project.savingbee.productAlert.controller;
 
+import com.project.savingbee.productAlert.dto.AlertSettingsRequestDto;
+import com.project.savingbee.productAlert.dto.AlertSettingsResponseDto;
+import com.project.savingbee.productAlert.service.ProductAlertService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
