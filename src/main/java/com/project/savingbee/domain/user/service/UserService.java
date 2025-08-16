@@ -4,12 +4,19 @@ import com.project.savingbee.domain.user.dto.UserRequestDTO;
 import com.project.savingbee.domain.user.entity.User;
 import com.project.savingbee.domain.user.entity.UserRoleType;
 import com.project.savingbee.domain.user.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
+
+
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
@@ -46,8 +53,42 @@ public class UserService {
 
     // 자체 로그인
 
-    // 자체 로그인 회원 정보 수정
+    @Transactional(readOnly = true)
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
+        User entity = userRepository.findByUsernameAndIsLockAndIsSocial(username, false, false)
+                .orElseThrow(() -> new UsernameNotFoundException(username));
+
+        return org.springframework.security.core.userdetails.User.builder()// return USer.builder()로 하니까 .roles에 오류 뜸.
+                .username(entity.getUsername())
+                .password(entity.getPassword())
+                .roles(entity.getRoleType().name())
+                .accountLocked(entity.getIsLock())
+                .build();
+    }
+
+    // 자체 로그인 회원 정보 수정
+    @Transactional
+    public Long updateUser(UserRequestDTO dto) throws AccessDeniedException {
+
+        // 본인만 수정 가능 검증
+        String sessionUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!sessionUsername.equals(dto.getUsername())) {
+            throw new AccessDeniedException("본인 계정만 수정 가능");
+        }
+
+        // 조회
+        User entity = userRepository.findByUsernameAndIsLockAndIsSocial(dto.getUsername(), false, false)
+                .orElseThrow(() -> new UsernameNotFoundException(dto.getUsername()));
+
+        // 회원 정보 수정
+        entity.updateUser(dto);
+
+        return userRepository.save(entity).getId();
+
+
+    }
     // 자체/소셜 로그인 회원 탈퇴
 
     // 소셜 로그인 (매 로그인시 : 신규 = 가입, 기존 = 업데이트)
