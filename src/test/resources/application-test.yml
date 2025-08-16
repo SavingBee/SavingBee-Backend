@@ -1,13 +1,10 @@
 spring:
   config:
     import:
-      - classpath:application-secret.properties  # 보안 파일 import
-
-  profiles:
-    active: test
+      - classpath:application-secret.properties
 
   datasource:
-    url: jdbc:mysql://localhost:3306/savingbee_test
+    url: jdbc:mysql://localhost:3307/savingbee_test?allowPublicKeyRetrieval=true&useSSL=false
     username: root
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver

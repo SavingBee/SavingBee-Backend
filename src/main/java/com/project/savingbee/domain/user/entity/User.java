@@ -18,7 +18,7 @@ import java.util.List;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "users" )
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
