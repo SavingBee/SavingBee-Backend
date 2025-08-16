@@ -56,6 +56,8 @@ public class ProductAlertSetting {
   @UpdateTimestamp
   private LocalDateTime updatedAt; // 수정일시
 
+  private LocalDateTime lastEvaluatedAt; // 해당 알림 설정이 마지막으로 상품을 비교 확인한 시각
+
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "userId", referencedColumnName = "id", insertable = false, updatable = false)
