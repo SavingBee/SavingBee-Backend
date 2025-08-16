@@ -14,6 +14,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.savingbee.common.entity.ProductAlertSetting.AlertType;
+import com.project.savingbee.productAlert.controller.ProductAlertController;
+import com.project.savingbee.productAlert.dto.AlertSettingsRequestDto;
+import com.project.savingbee.productAlert.dto.AlertSettingsResponseDto;
+import com.project.savingbee.productAlert.service.ProductAlertService;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
