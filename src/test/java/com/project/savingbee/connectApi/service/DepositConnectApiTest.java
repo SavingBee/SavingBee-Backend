@@ -221,7 +221,7 @@ class DepositConnectApiTest {
       log.info("금리 옵션 {}개:", productRates.size());
       for (int i = 0; i < Math.min(3, productRates.size()); i++) {  // 최대 3개만 출력
         DepositInterestRates rate = productRates.get(i);
-        log.info("   {}. {}개월, {}금리: 기본 {}% → 최고 {}%",
+        log.info("   {}. {}개월 {}금리: 기본 {}% → 최고 {}%",
             i + 1,
             rate.getSaveTrm(),
             "S".equals(rate.getIntrRateType()) ? "단리" : "복리",

@@ -9,7 +9,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(17)
 	}
 }
 
@@ -24,40 +24,42 @@ repositories {
 }
 
 dependencies {
-    dependencies {
-        // Core Spring Boot Starters
-        implementation 'org.springframework.boot:spring-boot-starter-web'         // MVC, REST API
-        implementation 'org.springframework.boot:spring-boot-starter-webflux'     // Reactive Web
-        implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'   // JDBC
-        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'    // JPA + Hibernate
-        implementation 'org.springframework.boot:spring-boot-starter-security'    // Spring Security
-        implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 Client
-        implementation 'org.springframework.boot:spring-boot-starter-validation'  // Bean Validation
+    // Core Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'         // MVC, REST API
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'     // Reactive Web
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'   // JDBC
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'    // JPA + Hibernate
+    implementation 'org.springframework.boot:spring-boot-starter-security'    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 Client
+    implementation 'org.springframework.boot:spring-boot-starter-validation'  // Bean Validation
 
-        // Database
-        runtimeOnly 'com.mysql:mysql-connector-j'              // MySQL Driver
-        runtimeOnly 'com.h2database:h2:2.2.224'                 // H2 Database (runtime)
-        testImplementation 'com.h2database:h2:2.2.224'          // H2 Database (test)
+    // Database
+    runtimeOnly 'com.mysql:mysql-connector-j'              // MySQL Driver
+    runtimeOnly 'com.h2database:h2:2.2.224'                 // H2 Database (runtime)
+    testImplementation 'com.h2database:h2:2.2.224'          // H2 Database (test)
 
-        // Development Tools
-        compileOnly 'org.projectlombok:lombok'
-        annotationProcessor 'org.projectlombok:lombok'
-        testCompileOnly 'org.projectlombok:lombok'
-        testAnnotationProcessor 'org.projectlombok:lombok'
-        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-        developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    // Development Tools
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
-        // Testing
-        testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testImplementation 'org.springframework.security:spring-security-test'
-        testImplementation 'org.mockito:mockito-core'
-        testImplementation 'org.mockito:mockito-junit-jupiter'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    }
-
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
 }
 
+
 test {
+    useJUnitPlatform()
+
     // 테스트 실행 시 시스템 속성 설정
     systemProperty 'spring.profiles.active', 'test'
 

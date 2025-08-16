@@ -1,11 +1,13 @@
 package com.project.savingbee.connectApi.service;
 
+import static com.project.savingbee.connectApi.util.ApiParsing.*;
+
 import com.project.savingbee.common.entity.*;
 import com.project.savingbee.common.repository.*;
 import com.project.savingbee.connectApi.dto.DepositApiResponse;
 import com.project.savingbee.connectApi.dto.DepositApiResponse.BaseListItem;
+import com.project.savingbee.connectApi.util.ApiParsing;
 import jakarta.transaction.Transactional;
-import java.math.BigDecimal;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -42,10 +44,11 @@ public class DepositConnectApi {
    * 금융 감독원 예금 API 연결 메인 메서드
    */
   @Transactional
-  public void ConnectDepositProducts() {
+  public void connectDepositProducts() {
     try {
       log.info("예금 상품 API 연결 시작");
 
+      // TODO: WebClient 기본 설정과 생성 하나로 예금, 적금 둘 다 사용가능한 방법이 있는 지 확인
       // WebClient 기본 설정 및 생성
       WebClient webClient = WebClient.builder()
           .baseUrl("https://finlife.fss.or.kr/finlifeapi")
@@ -197,9 +200,9 @@ public class DepositConnectApi {
             .joinDeny(item.getJoinDeny())
             .joinMember(item.getJoinMember())
             .etcNote(item.getEtcNote())
-            .maxLimit(parseBigDecimal(item.getMaxLimit()))
-            .dclsStrtDay(parseDate(item.getDclsStrtDay()))
-            .dclsEndDay(parseDate(item.getDclsEndDay()))
+            .maxLimit(ApiParsing.parseBigDecimal(item.getMaxLimit()))
+            .dclsStrtDay(ApiParsing.parseDate(item.getDclsStrtDay()))
+            .dclsEndDay(ApiParsing.parseDate(item.getDclsEndDay()))
             .isActive(true)
             .finCoNo(item.getFinCoNo())
             .build();
@@ -238,9 +241,9 @@ public class DepositConnectApi {
         // 존재하지 않으면 저장
         DepositInterestRates rate = DepositInterestRates.builder()
             .intrRateType(option.getIntrRateType())
-            .saveTrm(parseInteger(option.getSaveTrm()))
-            .intrRate(parseBigDecimal(option.getIntrRate()))
-            .intrRate2(parseBigDecimal(option.getIntrRate2()))
+            .saveTrm(ApiParsing.parseInteger(option.getSaveTrm()))
+            .intrRate(ApiParsing.parseBigDecimal(option.getIntrRate()))
+            .intrRate2(ApiParsing.parseBigDecimal(option.getIntrRate2()))
             .finPrdtCd(option.getFinPrdtCd())
             .build();
 
@@ -278,45 +281,6 @@ public class DepositConnectApi {
       log.info("기본금리: {}%", sampleOption.getIntrRate());
       log.info("최고우대금리: {}%", sampleOption.getIntrRate2());
       log.info("========================");
-    }
-  }
-
-  /**
-   * 파싱 메서드
-   */
-  private LocalDate parseDate(String dateStr) {
-    if (dateStr == null || dateStr.trim().isEmpty()) {
-      return null;
-    }
-    try {
-      return LocalDate.parse(dateStr, dateTimeFormatter);
-    } catch (Exception e) {
-      log.warn("날짜 파싱 실패: {}", dateStr);
-      return null;
-    }
-  }
-
-  private Integer parseInteger(String str) {
-    if (str == null || str.trim().isEmpty()) {
-      return null;
-    }
-    try {
-      return Integer.valueOf(str);
-    } catch (NumberFormatException e) {
-      log.warn("정수 파싱 실패: {}", str);
-      return null;
-    }
-  }
-
-  private BigDecimal parseBigDecimal(String str) {
-    if (str == null || str.trim().isEmpty()) {
-      return null;
-    }
-    try {
-      return new BigDecimal(str);
-    } catch (NumberFormatException e) {
-      log.warn("BigDecimal 파싱 실패: {}", str);
-      return null;
     }
   }
 
