@@ -1,6 +1,6 @@
 package com.project.savingbee.common.entity;
 
-import com.project.savingbee.domain.user.entity.User;
+import com.project.savingbee.domain.user.entity.UserEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -40,7 +40,7 @@ public class UserProduct {
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "id", referencedColumnName = "id", insertable = false, updatable = false)
-  private User user; // 사용자
+  private UserEntity userEntity; // 사용자
 
   // 연관관계
   @OneToMany(mappedBy = "userProduct", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

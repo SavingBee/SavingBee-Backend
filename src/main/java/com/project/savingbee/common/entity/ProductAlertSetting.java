@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
-import com.project.savingbee.domain.user.entity.User;
+import com.project.savingbee.domain.user.entity.UserEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -59,7 +59,7 @@ public class ProductAlertSetting {
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "userId", referencedColumnName = "id", insertable = false, updatable = false)
-  private User user; // 사용자
+  private UserEntity userEntity; // 사용자
 
   // Enum 정의
   public enum AlertType {
