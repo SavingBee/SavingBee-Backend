@@ -3,8 +3,8 @@ package com.project.savingbee.common.repository;
 import com.project.savingbee.common.entity.SavingsInterestRates;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +12,18 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SavingsInterestRatesRepository extends JpaRepository<SavingsInterestRates, Long> {
+  
+  // 금융 상품 데이터 정보 존재 여부
+  boolean existsByFinPrdtCdAndIntrRateTypeAndRsrvTypeAndSaveTrm(
+      String finPrdtCd,
+      String intrRateType,
+      String rsrvType,
+      Integer saveTrm
+  );
 
+  // 금융상품 번호로 상품찾기
+  List<SavingsInterestRates> findByFinPrdtCd(String finPrdtCd);
+  
   // 예치 기간 + 이자계산방식 + 적립방식 필터링 후 최고 금리
   Optional<SavingsInterestRates>
   findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInAndRsrvTypeInOrderByIntrRate2DescIntrRateDesc(
@@ -52,5 +63,5 @@ public interface SavingsInterestRatesRepository extends JpaRepository<SavingsInt
 
   // 알람 후보 수집용(금리 옵션 테이블에서 since 이후 변경된 상품 코드 목록)
   @Query("select distinct r.finPrdtCd from SavingsInterestRates r where r.updatedAt > :since")
-  List<String> findDistinctFinPrdtCdUpdatedAfter(@Param("since") LocalDateTime since);
+  List<String> findDistinctFinPrdtCdUpdatedAfter(@Param("since") LocalDateTime since); 
 }

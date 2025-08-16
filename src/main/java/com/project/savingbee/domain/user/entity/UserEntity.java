@@ -2,13 +2,12 @@ package com.project.savingbee.domain.user.entity;
 
 import com.project.savingbee.common.entity.ProductAlertSetting;
 import com.project.savingbee.common.entity.UserProduct;
+import com.project.savingbee.domain.user.dto.UserRequestDTO;
 import lombok.Getter;
 import lombok.Setter;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,13 +17,13 @@ import java.util.List;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "users" )
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class UserEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,4 +72,9 @@ public class User {
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private List<ProductAlertSetting> productAlertSettings; // 상품 알림 설정들
+
+  public void updateUser(UserRequestDTO dto) {
+    this.email = dto.getEmail();
+    this.nickname = dto.getNickname();
+  }
 }
