@@ -144,14 +144,14 @@ public class AlertMatchService {
       }
     }
 
-    // 예치 금액, 최소 가입금액 ~ 최대 한도 구간 겹침 여부로 판단
+    // 예치 금액 설정값이 상품 값 범위에 포함 되는 지 확인
     if (setting.getMinAmount() != null || setting.getMaxLimit() != null) {
       Long prodMin = toLongExact(product.getMinAmount());
       Long prodMax = toLongExact(product.getMaxLimit());
       Long settingMin = toLongExact(setting.getMinAmount());
       Long settingMax = toLongExact(setting.getMaxLimit());
 
-      if (!overlaps(settingMin, settingMax, prodMin, prodMax)) {
+      if (!contains(settingMin, settingMax, prodMin, prodMax)) {
         return false;
       }
     }
@@ -263,13 +263,19 @@ public class AlertMatchService {
     return list;
   }
 
-  // 예치 금액, 최소 가입금액 ~ 최대 한도 구간 겹침 여부로 판단
-  private boolean overlaps(Long aMin, Long aMax, Long bMin, Long bMax) {
-    long A1 = aMin == null ? Long.MIN_VALUE : aMin;
-    long A2 = aMax == null ? Long.MAX_VALUE : aMax;
-    long B1 = bMin == null ? Long.MIN_VALUE : bMin;
-    long B2 = bMax == null ? Long.MAX_VALUE : bMax;
-    return A1 <= B2 && B1 <= A2;
+  // 예치 금액 설정값이 상품 값 범위에 포함 되는 지 확인
+  private boolean contains(Long settingMin, Long settingMax, Long productMin, Long productMax) {
+    // 최소 가입금액 설정 시
+    if (settingMin != null) {
+      if (settingMin < productMin || settingMin > productMax) return false;
+    }
+
+    // 최대 한도 설정 시
+    if (settingMax != null) {
+      if (settingMax < productMin || settingMax > productMax) return false;
+    }
+
+    return true;
   }
 
   // BigDecimal -> Long 변환
