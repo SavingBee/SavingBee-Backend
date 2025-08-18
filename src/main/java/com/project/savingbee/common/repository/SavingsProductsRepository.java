@@ -15,4 +15,10 @@ public interface SavingsProductsRepository extends JpaRepository<SavingsProducts
 
   // 금융상품코드 목록에 해당하는 상품 조회(금리 옵션 정보만 변경된 상품을 코드로 가져온 뒤 조회)
   List<SavingsProducts> findByFinPrdtCdIn(Collection<String> codes);
+
+  // 상품명으로 검색 - 가입 가능 상품만
+  List<SavingsProducts> findByFinPrdtNmContainingIgnoreCaseAndIsActiveTrue(String finPrdtNm);
+
+  // 활성 상품을 최신 등록순으로 조회
+  List<SavingsProducts> findByIsActiveTrueOrderByCreatedAtDesc();
 }
