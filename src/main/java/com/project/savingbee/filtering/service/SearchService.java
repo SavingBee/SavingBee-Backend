@@ -1,20 +1,11 @@
 package com.project.savingbee.filtering.service;
 
-import com.project.savingbee.common.entity.DepositProducts;
-import com.project.savingbee.common.entity.SavingsProducts;
-import com.project.savingbee.common.repository.DepositProductsRepository;
-import com.project.savingbee.common.repository.SavingsProductsRepository;
+import com.project.savingbee.common.entity.*;
+import com.project.savingbee.common.repository.*;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.util.KoreanParsing;
-import jakarta.persistence.Cacheable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
