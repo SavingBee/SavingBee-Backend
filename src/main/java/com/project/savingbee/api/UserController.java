@@ -38,6 +38,26 @@ public class UserController {
         return ResponseEntity.status(201).body(responseBody);
     }
 
+    // 아이디 찾기
+    @PostMapping(value = "/user/find-username", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> findUsernameApi(
+            @Validated(UserRequestDTO.findUsernameGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        userService.findUsername(dto);
+        Map<String, String> responseBody = Collections.singletonMap("message", "아이디가 이메일로 발송되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // 비밀번호 재설정 (임시 비밀번호 발급)
+    @PostMapping(value = "/user/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> resetPasswordApi(
+            @Validated(UserRequestDTO.resetPasswordGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        userService.resetPassword(dto);
+        Map<String, String> responseBody = Collections.singletonMap("message", "임시 비밀번호가 이메일로 발송되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
     // 유저 정보
     @GetMapping(value = "/user", consumes = MediaType.APPLICATION_JSON_VALUE)
     public UserResponseDTO userMeApi() {
@@ -61,5 +81,35 @@ public class UserController {
         userService.deleteUser(dto);
         return ResponseEntity.status(200).body(true);
     }
+    // 비밀번호 찾기 (인증 코드 발송)
+    @PostMapping(value = "/user/find-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> findPasswordApi(
+            @Validated(UserRequestDTO.findPasswordGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        userService.findPassword(dto);
+        Map<String, String> responseBody = Collections.singletonMap("message", "인증 코드가 이메일로 발송되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // 인증 코드 확인
+    @PostMapping(value = "/user/verify-code", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Boolean>> verifyCodeApi(
+            @Validated(UserRequestDTO.verifyCodeGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        boolean isValid = userService.verifyCode(dto);
+        Map<String, Boolean> responseBody = Collections.singletonMap("valid", isValid);
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // 새 비밀번호 설정
+    @PostMapping(value = "/user/new-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> setNewPasswordApi(
+            @Validated(UserRequestDTO.newPasswordGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        userService.setNewPassword(dto);
+        Map<String, String> responseBody = Collections.singletonMap("message", "비밀번호가 성공적으로 변경되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
 
 }
