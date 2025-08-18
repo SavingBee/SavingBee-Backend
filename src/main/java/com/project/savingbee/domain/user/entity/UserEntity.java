@@ -67,10 +67,10 @@ public class UserEntity {
   private LocalDateTime updatedDate; //최종 수정된 날짜
 
   // 연관관계
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "userEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private List<UserProduct> userProducts; // 사용자가 등록한 상품들
 
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "userEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private List<ProductAlertSetting> productAlertSettings; // 상품 알림 설정들
 
   public void updateUser(UserRequestDTO dto) {
