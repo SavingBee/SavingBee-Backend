@@ -28,12 +28,22 @@ public class UserController {
     ) {
         return ResponseEntity.ok(userService.existUser(dto));
     }
-    // 회원가입
+    // 기존 방식: 즉시 회원가입
     @PostMapping(value = "/user", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Long>> joinApi(
             @Validated(UserRequestDTO.addGroup.class) @RequestBody UserRequestDTO dto
     ) {
         Long id = userService.addUser(dto);
+        Map<String, Long> responseBody = Collections.singletonMap("userEntityId", id);
+        return ResponseEntity.status(201).body(responseBody);
+    }
+
+    // 새로운 방식: 이메일 인증 후 회원가입
+    @PostMapping(value = "/user/verified", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Long>> joinWithVerificationApi(
+            @Validated(UserRequestDTO.addGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        Long id = userService.addUserWithEmailVerification(dto);
         Map<String, Long> responseBody = Collections.singletonMap("userEntityId", id);
         return ResponseEntity.status(201).body(responseBody);
     }
@@ -108,6 +118,26 @@ public class UserController {
     ) {
         userService.setNewPassword(dto);
         Map<String, String> responseBody = Collections.singletonMap("message", "비밀번호가 성공적으로 변경되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // 회원가입 이메일 인증 코드 발송
+    @PostMapping(value = "/user/signup/send-code", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> sendSignupVerificationCodeApi(
+            @Validated(UserRequestDTO.signupEmailVerifyGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        userService.sendSignupVerificationCode(dto);
+        Map<String, String> responseBody = Collections.singletonMap("message", "인증 코드가 이메일로 발송되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // 회원가입 인증 코드 확인
+    @PostMapping(value = "/user/signup/verify-code", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Boolean>> verifySignupCodeApi(
+            @Validated(UserRequestDTO.signupVerifyCodeGroup.class) @RequestBody UserRequestDTO dto
+    ) {
+        boolean isValid = userService.verifySignupCode(dto);
+        Map<String, Boolean> responseBody = Collections.singletonMap("valid", isValid);
         return ResponseEntity.ok(responseBody);
     }
 

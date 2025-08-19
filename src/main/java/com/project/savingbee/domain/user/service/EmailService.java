@@ -64,4 +64,39 @@ public class EmailService {
             throw new RuntimeException("이메일 발송에 실패했습니다.");
         }
     }
+
+    public void sendSignupVerificationCodeEmail(String toEmail, String verificationCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("[SavingBee] 회원가입 이메일 인증 코드");
+            message.setText("안녕하세요.\n\n회원가입을 위한 이메일 인증 코드입니다.\n\n" +
+                          "인증 코드: " + verificationCode + "\n\n" +
+                          "인증 코드는 10분간 유효합니다.\n\n감사합니다.\nSavingBee 팀");
+            
+            mailSender.send(message);
+            log.info("회원가입 인증 코드 이메일 발송 완료: {}", toEmail);
+        } catch (Exception e) {
+            log.error("회원가입 인증 코드 이메일 발송 실패: {}", toEmail, e);
+            log.warn("개발 환경에서 이메일 발송 실패를 무시합니다.");
+        }
+    }
+
+    public void sendSignupWelcomeEmail(String toEmail, String username) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("[SavingBee] 회원가입을 축하합니다!");
+            message.setText("안녕하세요, " + username + "님!\n\n" +
+                          "SavingBee 회원가입이 성공적으로 완료되었습니다.\n\n" +
+                          "다양한 예적금 상품을 확인하고 맞춤 알림을 설정해보세요.\n\n" +
+                          "감사합니다.\nSavingBee 팀");
+            
+            mailSender.send(message);
+            log.info("회원가입 환영 이메일 발송 완료: {}", toEmail);
+        } catch (Exception e) {
+            log.error("회원가입 환영 이메일 발송 실패: {}", toEmail, e);
+            log.warn("개발 환경에서 이메일 발송 실패를 무시합니다.");
+        }
+    }
 }

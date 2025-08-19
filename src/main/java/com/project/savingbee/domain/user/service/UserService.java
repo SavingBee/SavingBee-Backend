@@ -8,8 +8,10 @@ import com.project.savingbee.domain.user.entity.PasswordResetToken;
 import com.project.savingbee.domain.user.entity.SocialProviderType;
 import com.project.savingbee.domain.user.entity.UserEntity;
 import com.project.savingbee.domain.user.entity.UserRoleType;
+import com.project.savingbee.domain.user.entity.SignupVerificationToken;
 import com.project.savingbee.domain.user.repository.PasswordResetTokenRepository;
 import com.project.savingbee.domain.user.repository.UserRepository;
+import com.project.savingbee.domain.user.repository.SignupVerificationTokenRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -39,16 +41,19 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final EmailService emailService;
-    private final PasswordResetTokenRepository passwordResetTokenRepository; // 추가
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final SignupVerificationTokenRepository signupVerificationTokenRepository; // 추가
 
     public UserService(PasswordEncoder passwordEncoder, UserRepository userRepository, 
                       JwtService jwtService, EmailService emailService,
-                      PasswordResetTokenRepository passwordResetTokenRepository) {
+                      PasswordResetTokenRepository passwordResetTokenRepository,
+                      SignupVerificationTokenRepository signupVerificationTokenRepository) {
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.emailService = emailService;
-        this.passwordResetTokenRepository = passwordResetTokenRepository; // 추가
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.signupVerificationTokenRepository = signupVerificationTokenRepository; // 추가
     }
 
     // 자체 로그인 회원 가입 (존재 여부)
@@ -56,14 +61,14 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
     public Boolean existUser(UserRequestDTO dto) {
         return userRepository.existsByUsername(dto.getUsername());
     }
-    // 자체 로그인 회원 가입
+    // 기존 방식: 즉시 회원가입 (이메일 인증 없이)
     @Transactional
     public Long addUser(UserRequestDTO dto) {
-
         if (userRepository.existsByUsername(dto.getUsername())) {
             throw new IllegalArgumentException("이미 유저가 존재합니다.");
         }
-        // 비밀번호 확인 검증 추가
+
+        // 비밀번호 확인 검증
         if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
@@ -73,12 +78,66 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .isLock(false)
                 .isSocial(false)
-                .roleType(UserRoleType.USER) // 우선 일반 유저로 가입
+                .roleType(UserRoleType.USER)
                 .nickname(dto.getNickname())
-                .email(dto.getEmail()) //👈 여기서 email 저장하기 때문에 필수값입니다.
+                .email(dto.getEmail())
                 .build();
 
-        return userRepository.save(entity).getId();
+        Long userId = userRepository.save(entity).getId();
+
+        // 환영 이메일 발송 (선택사항)
+        try {
+            emailService.sendSignupWelcomeEmail(dto.getEmail(), dto.getUsername());
+        } catch (Exception e) {
+            // 이메일 발송 실패해도 회원가입은 성공 처리
+            // log.warn("환영 이메일 발송 실패: {}", e.getMessage()); // Original code had this line commented out
+        }
+
+        return userId;
+    }
+
+    // 새로운 방식: 이메일 인증 후 회원가입
+    @Transactional
+    public Long addUserWithEmailVerification(UserRequestDTO dto) {
+        // 인증된 토큰 확인
+        Optional<SignupVerificationToken> tokenOpt = signupVerificationTokenRepository
+            .findByEmailAndIsVerifiedTrueAndIsUsedFalseAndExpiresAtAfter(
+                dto.getEmail(), LocalDateTime.now());
+        
+        if (tokenOpt.isEmpty()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+        }
+
+        if (userRepository.existsByUsername(dto.getUsername())) {
+            throw new IllegalArgumentException("이미 유저가 존재합니다.");
+        }
+
+        // 비밀번호 확인 검증
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        UserEntity entity = UserEntity.builder()
+                .username(dto.getUsername())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .isLock(false)
+                .isSocial(false)
+                .roleType(UserRoleType.USER)
+                .nickname(dto.getNickname())
+                .email(dto.getEmail())
+                .build();
+
+        Long userId = userRepository.save(entity).getId();
+
+        // 토큰 사용 처리
+        SignupVerificationToken token = tokenOpt.get();
+        token.setIsUsed(true);
+        signupVerificationTokenRepository.save(token);
+
+        // 환영 이메일 발송
+        emailService.sendSignupWelcomeEmail(dto.getEmail(), dto.getUsername());
+
+        return userId;
     }
 
 
@@ -350,5 +409,53 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
     private String generateVerificationCode() {
         java.util.Random random = new java.util.Random();
         return String.format("%06d", random.nextInt(1000000));
+    }
+
+    // 회원가입 이메일 인증 코드 발송
+    @Transactional
+    public void sendSignupVerificationCode(UserRequestDTO dto) {
+        // 이미 가입된 이메일인지 확인
+        Optional<UserEntity> existingUser = userRepository.findByEmailAndIsSocial(dto.getEmail(), false);
+        if (existingUser.isPresent()) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        // 기존 토큰 삭제
+        signupVerificationTokenRepository.deleteByEmail(dto.getEmail());
+
+        // 6자리 인증 코드 생성
+        String verificationCode = generateVerificationCode();
+
+        // 토큰 생성 (10분 후 만료)
+        SignupVerificationToken token = SignupVerificationToken.builder()
+            .email(dto.getEmail())
+            .verificationCode(verificationCode)
+            .expiresAt(LocalDateTime.now().plusMinutes(10))
+            .tempUsername(dto.getUsername())
+            .tempPassword(passwordEncoder.encode(dto.getPassword()))
+            .tempNickname(dto.getNickname())
+            .build();
+
+        signupVerificationTokenRepository.save(token);
+
+        // 이메일로 인증 코드 발송
+        emailService.sendSignupVerificationCodeEmail(dto.getEmail(), verificationCode);
+    }
+
+    // 회원가입 인증 코드 확인
+    @Transactional
+    public boolean verifySignupCode(UserRequestDTO dto) {
+        Optional<SignupVerificationToken> tokenOpt = signupVerificationTokenRepository
+            .findByEmailAndVerificationCodeAndIsUsedFalseAndExpiresAtAfter(
+                dto.getEmail(), dto.getVerificationCode(), LocalDateTime.now());
+
+        if (tokenOpt.isPresent()) {
+            // 인증 완료 처리
+            SignupVerificationToken token = tokenOpt.get();
+            token.setIsVerified(true);
+            signupVerificationTokenRepository.save(token);
+            return true;
+        }
+        return false;
     }
 }
