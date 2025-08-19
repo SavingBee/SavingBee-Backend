@@ -32,6 +32,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'    // Spring Security
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 Client
     implementation 'org.springframework.boot:spring-boot-starter-validation'  // Bean Validation
+    implementation 'org.springframework.boot:spring-boot-starter-mail'        // 이메일 발송 기능 추가
 
     // Database
     runtimeOnly 'com.mysql:mysql-connector-j'              // MySQL Driver
@@ -45,6 +46,11 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
+    //Jwt Repository
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
