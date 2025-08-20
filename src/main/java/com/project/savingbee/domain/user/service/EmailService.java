@@ -99,4 +99,19 @@ public class EmailService {
             log.warn("개발 환경에서 이메일 발송 실패를 무시합니다.");
         }
     }
+
+    public void sendMaturityNotificationEmail(String toEmail, String username, String subject, String content) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject(subject);
+            message.setText(content);
+            
+            mailSender.send(message);
+            log.info("만기 알림 이메일 발송 완료: {}", toEmail);
+        } catch (Exception e) {
+            log.error("만기 알림 이메일 발송 실패: {}", toEmail, e);
+            throw new RuntimeException("만기 알림 이메일 발송에 실패했습니다.");
+        }
+    }
 }
