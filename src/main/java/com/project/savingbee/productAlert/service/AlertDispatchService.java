@@ -2,9 +2,16 @@ package com.project.savingbee.productAlert.service;
 
 import com.project.savingbee.common.entity.ProductAlertEvent;
 import com.project.savingbee.common.entity.ProductAlertEvent.EventStatus;
+import com.project.savingbee.common.entity.ProductAlertSetting.AlertType;
 import com.project.savingbee.common.repository.ProductAlertEventRepository;
+import com.project.savingbee.productAlert.channel.compose.AlertMessage;
+import com.project.savingbee.productAlert.channel.compose.AlertMessageComposer;
+import com.project.savingbee.productAlert.channel.exception.NonRetryableChannelException;
+import com.project.savingbee.productAlert.channel.exception.RetryableChannelException;
+import com.project.savingbee.productAlert.channel.router.ChannelRouter;
 import com.project.savingbee.productAlert.dto.AlertDispatchResponseDto;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AlertDispatchService {
   private final ProductAlertEventRepository productAlertEventRepository;
+  private final AlertEventStateService alertEventStateService;
+  private final ChannelRouter channelRouter;
+  private final AlertMessageComposer alertMessageComposer;
 
   /**
    * 배치 전송 1회 수행
@@ -26,31 +36,47 @@ public class AlertDispatchService {
   public AlertDispatchResponseDto dispatchNow(int batchSize) {
     LocalDateTime now = LocalDateTime.now();
 
+    // SENDING timeout 복구
+    alertEventStateService.recoverStuckSending(now);
+
     int processed = 0, sent = 0, failed = 0;
 
-    // 발송 후보(READY) 조회 (id 순으로 정렬)
+    // 발송 후보(READY, FAILED) 조회 (id 순으로 정렬)
     Page<ProductAlertEvent> page =
-        productAlertEventRepository.findByStatusAndSendNotBeforeLessThanEqual(
-        EventStatus.READY, now,
+        productAlertEventRepository.findByStatusInAndSendNotBeforeLessThanEqual(
+        List.of(EventStatus.READY, EventStatus.FAILED), now,
             PageRequest.of(0, batchSize, Sort.by(Sort.Order.asc("id")))
         );
 
     for (ProductAlertEvent event : page.getContent()) {
-      // READY -> SENDING
-      if (toSending(event, now)) {
-        processed++;
-      }
+      // READY/FAILED -> SENDING 후 커밋
+      if (!alertEventStateService.toSending(event, now)) continue;
+
+      processed++;
 
       // 전송 시도(성공/실패)
       try {
+        AlertType alertType = event.getProductAlertSetting().getAlertType();
+
+        AlertMessage message =
+            alertMessageComposer.compose(alertType, event);
+
+        channelRouter.send(alertType, message);
+
         event.setStatus(EventStatus.SENT);
         event.setSentAt(now);
         event.setAttempts(event.getAttempts() + 1);
         sent++;
-      } catch (Exception e) {
+      } catch (NonRetryableChannelException e) {
         event.setStatus(EventStatus.FAILED);
         event.setAttempts(event.getAttempts() + 1);
-        event.setLastError(e.getMessage());
+        event.setSendNotBefore(now.plusYears(100));   // 재시도 소용 없는 실패로 아주 먼 시간 설정
+        event.setLastError(truncate(e.getMessage(), 200));
+        failed++;
+      } catch (RetryableChannelException e) {
+        event.setStatus(EventStatus.FAILED);
+        event.setAttempts(event.getAttempts() + 1);
+        event.setLastError(truncate(e.getMessage(), 200));
         failed++;
       }
 
@@ -60,14 +86,9 @@ public class AlertDispatchService {
     return new AlertDispatchResponseDto(processed, sent, failed);
   }
 
-  // READY -> SENDING
-  private boolean toSending(ProductAlertEvent event, LocalDateTime now) {
-    if (event.getStatus() != EventStatus.READY) {
-      return false;
-    }
-    event.setStatus(EventStatus.SENDING);
-    event.setUpdatedAt(now);
-    productAlertEventRepository.save(event);
-    return true;
+  // 에러 메시지가 너무 길 경우 자르기
+  private String truncate(String s, int max) {
+    if (s == null) return null;
+    return s.length() <= max ? s : s.substring(0, max);
   }
 }
