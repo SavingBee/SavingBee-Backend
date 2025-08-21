@@ -15,7 +15,8 @@ public class FilterMappingUtil {
   }
 
   /**
-   * 가입대상 표시명을 코드로 변환 ["제한없음", "서민전용"] → ["1", "2"]
+   * 가입대상 표시명을 코드로 변환
+   * ["제한없음", "서민전용"] → ["1", "2"]
    */
   public static List<String> convertJoinDenyNamesToCodes(List<String> displayNames) {
     if (displayNames == null || displayNames.isEmpty()) {
@@ -38,7 +39,8 @@ public class FilterMappingUtil {
   }
 
   /**
-   * 금융회사 유형 표시명을 기관유형코드로 변환 ["은행", "저축은행"] → ["020000", "030300"]
+   * 금융회사 유형 표시명을 기관유형코드로 변환
+   * ["은행", "저축은행"] → ["020000", "030300"]
    */
   public static List<String> convertFinancialCompanyNamesToCodes(List<String> displayNames) {
     if (displayNames == null || displayNames.isEmpty()) {
@@ -60,7 +62,8 @@ public class FilterMappingUtil {
   }
 
   /**
-   * 이자계산방식 표시명을 코드로 변환 ["단리", "복리"] → ["S", "M"]
+   * 이자계산방식 표시명을 코드로 변환
+   * ["단리", "복리"] → ["S", "M"]
    */
   public static List<String> convertInterestRateNamesToCodes(List<String> displayNames) {
     if (displayNames == null || displayNames.isEmpty()) {
@@ -82,7 +85,8 @@ public class FilterMappingUtil {
   }
 
   /**
-   * 우대조건 표시명을 TEXT 검색 키워드들로 변환 ["비대면가입", "재예치"] → [["비대면", "인터넷", "스마트"], ["재예치", "자동재예치"]]
+   * 우대조건 표시명을 TEXT 검색 키워드들로 변환
+   * ["비대면가입", "재예치"] → [["비대면", "인터넷", "스마트"], ["재예치", "자동재예치"]]
    */
   public static List<List<String>> convertPreferentialNameToKeywords(List<String> displayNames) {
     if (displayNames == null || displayNames.isEmpty()) {

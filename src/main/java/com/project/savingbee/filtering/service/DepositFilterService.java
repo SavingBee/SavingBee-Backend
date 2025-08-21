@@ -30,8 +30,15 @@ public class DepositFilterService {
   private final DepositProductsRepository depositProductsRepository;
 
   /**
-   * 예금 필터링 필터링 조건 금융권역 - 은행, 저축은행, 신협조합 우대조건 - 비대면 가입, 재예치, 첫 거래, 연령, 실적 가입대상 - 제한없음, 서민전용, 일부 제한
-   * 저축기간 - 6개월, 12개월, 24개월, 36개월 이자계산 방식 - 단리, 복리 저축금 기본 금리 - 최저값 ~ 최고값 범위 최고 금리 - 최저값 ~ 최고값 범위
+   * 예금 필터링 필터링 조건
+   * 금융권역 - 은행, 저축은행, 신협조합
+   * 우대조건 - 비대면 가입, 재예치, 첫 거래, 연령, 실적
+   * 가입대상 - 제한없음, 서민전용, 일부 제한
+   * 저축기간 - 6개월, 12개월, 24개월, 36개월
+   * 이자계산 방식 - 단리, 복리
+   * 저축금
+   * 기본 금리 - 최저값 ~ 최고값 범위
+   * 최고 금리 - 최저값 ~ 최고값 범위
    */
   public Page<ProductSummaryResponse> depositFilter(DepositFilterRequest request) {
     log.info("예금 필터링 시작 - 조건: {}", request);
@@ -138,7 +145,8 @@ public class DepositFilterService {
    * 필터링 조건만 생성
    */
   private Specification<DepositProducts> buildFilterSpecification(DepositFilterRequest request) {
-    Specification<DepositProducts> spec = Specification.where(isActiveProduct());
+//    Specification<DepositProducts> spec = Specification.where(isActiveProduct());
+    Specification<DepositProducts> spec = isActiveProduct();
 
     // 필터 조건이 있으면 적용
     if (request.hasFilters()) {
@@ -306,7 +314,7 @@ public class DepositFilterService {
   }
 
   /**
-   * 금리 및 저축 기간 조건 - 저축기간 조건 - 이자계산 방식 조건 - 기본 금리 범위 - 우대금리 범위
+   * 금리 및 저축 기간 조건
    */
   private Predicate conditionInterestRate(DepositFilterRequest.Filters filters,
       jakarta.persistence.criteria.Join<?, ?> interestRatesJoin,
@@ -351,7 +359,7 @@ public class DepositFilterService {
   }
 
   /**
-   * 가입 한도 조건 확인 - 최소 한도: maxLimit이 요청 최소값이상 - 최대 한도: maxLimit이 요청 최대값 이하
+   * 가입 한도 조건 확인
    */
   private Specification<DepositProducts> rangeMaxLimit(
       DepositFilterRequest.RangeFilter maxLimitRange) {

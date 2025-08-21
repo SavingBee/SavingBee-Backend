@@ -98,7 +98,7 @@ public class DepositFilterController {
       filtersBuilder.intrRateType(parseStringList(intrRateType));
     }
 
-    // 정수 파라미터들을 리스트로 변환 (저축기간)
+    // 정수 파라미터들을 리스트로 변환
     if (saveTrm != null && !saveTrm.trim().isEmpty()) {
       filtersBuilder.saveTrm(parseIntegerList(saveTrm));
     }
@@ -111,6 +111,7 @@ public class DepositFilterController {
           .build());
     }
 
+    // 최고 금리 설정
     if (intrRate2Min != null || intrRate2Max != null) {
       filtersBuilder.intrRate2(DepositFilterRequest.RangeFilter.builder()
           .min(intrRate2Min)
@@ -118,6 +119,7 @@ public class DepositFilterController {
           .build());
     }
 
+    // 최고 한도 설정
     if (maxLimitMin != null || maxLimitMax != null) {
       filtersBuilder.maxLimit(DepositFilterRequest.RangeFilter.builder()
           .min(maxLimitMin)
@@ -146,7 +148,7 @@ public class DepositFilterController {
   }
 
   /**
-   * 콤마로 구분된 문자열을 List<String>으로 변환
+   * 문자열을 List<String>으로 변환
    */
   private List<String> parseStringList(String value) {
     if (value == null || value.trim().isEmpty()) {
@@ -159,7 +161,7 @@ public class DepositFilterController {
   }
 
   /**
-   * 콤마로 구분된 문자열을 List<Integer>로 변환
+   * List<Integer>로 변환
    */
   private List<Integer> parseIntegerList(String value) {
     if (value == null || value.trim().isEmpty()) {
@@ -176,11 +178,4 @@ public class DepositFilterController {
     }
   }
 
-  /**
-   * 간단한 헬스 체크 엔드포인트
-   */
-  @GetMapping("/health")
-  public ResponseEntity<String> health() {
-    return ResponseEntity.ok("Deposit Filter API is running");
-  }
 }

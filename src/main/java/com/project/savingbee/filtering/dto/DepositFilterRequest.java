@@ -5,7 +5,7 @@ import java.util.*;
 import lombok.*;
 
 /**
- * 예금 필터링 검색 요청 프론트엔드에서 shortUrl을 통해 파라미터로 받은 조건을 정리하여 FilterService에서 사용할 수 있게함
+ * 예금 필터링 검색 요청 - 프론트엔드에서 파라미터로 받은 조건을 정리하여 FilterService에서 사용할 수 있게함
  */
 @Data
 @Builder
@@ -29,10 +29,10 @@ public class DepositFilterRequest {
   public static class Filters {
 
     private List<String> finCoNo;           // 금융회사 번호들
-    private List<String> joinWay;           // 우대조건들 (비대면 가입, 재예치, 첫 거래)
-    private List<String> joinDeny;          // 가입제한 (1, 3 등)
-    private List<Integer> saveTrm;          // 저축기간 (6, 12, 24, 36)
-    private List<String> intrRateType;     // 이자율 유형 (S, M)
+    private List<String> joinWay;           // 우대조건들
+    private List<String> joinDeny;          // 가입제한
+    private List<Integer> saveTrm;          // 저축기간
+    private List<String> intrRateType;     // 이자율 유형
     private RangeFilter intrRate;          // 기본금리 범위
     private RangeFilter intrRate2;         // 최고금리 범위
     private RangeFilter maxLimit;          // 한도 범위

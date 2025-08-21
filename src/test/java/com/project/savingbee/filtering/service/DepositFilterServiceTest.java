@@ -25,8 +25,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
@@ -126,8 +124,7 @@ class DepositFilterServiceTest {
             .build()
     );
 
-    // 금리 정보 생성
-    // 고금리 상품 금리 (여러 기간)
+    // 고금리 상품 금리
     List<DepositInterestRates> highRateInterestRates = depositInterestRatesRepository.saveAll(
         Arrays.asList(
             DepositInterestRates.builder()
@@ -230,7 +227,7 @@ class DepositFilterServiceTest {
     assertThat(result.getContent()).hasSize(3);
     assertThat(result.getTotalElements()).isEqualTo(3);
 
-    // 금리 내림차순으로 정렬되어야 함 (기본 정렬: 최고금리 내림차순)
+    // 최고 금리 내림차순 기본 정렬
     List<ProductSummaryResponse> products = result.getContent();
     assertThat(products.get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
     assertThat(products.get(0).getMaxIntrRate()).isEqualTo(new BigDecimal("4.20"));
@@ -250,7 +247,7 @@ class DepositFilterServiceTest {
         .page(1)
         .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("0010001", "0010002")) // 우리은행, 국민은행만
+            .finCoNo(Arrays.asList("0010001", "0010002"))
             .build())
         .build();
 
@@ -275,7 +272,7 @@ class DepositFilterServiceTest {
         .page(1)
         .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .saveTrm(Arrays.asList(24)) // 24개월만
+            .saveTrm(Arrays.asList(24)) // 24개월
             .build())
         .build();
 
@@ -284,7 +281,7 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // 24개월 옵션이 있는 상품들만 나와야 함 (HIGH_RATE_001, MEDIUM_RATE_001)
+    // 24개월 옵션이 있는 상품들만
     assertThat(result.getContent()).hasSize(2);
 
     List<String> productCodes = result.getContent().stream()
@@ -301,7 +298,7 @@ class DepositFilterServiceTest {
         .page(1)
         .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .intrRateType(Arrays.asList("M")) // 복리만
+            .intrRateType(Arrays.asList("M")) // 복리
             .build())
         .build();
 
@@ -310,7 +307,7 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // 복리 옵션이 있는 상품만 나와야 함 (HIGH_RATE_001만)
+    // 복리 옵션이 있는 상품만
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
@@ -335,7 +332,7 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // MEDIUM_RATE_001의 기본금리들(2.50%, 2.60%)만 해당 범위에 속함
+    // 기본금리가 해당 범위에 속하는 상품만
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("MEDIUM_RATE_001");
   }
@@ -360,7 +357,7 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // MEDIUM_RATE_001(2.80%, 2.90%)만 해당 범위에 속함
+    // 우대 금리가 해당 범위에 속하는 상품만
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("MEDIUM_RATE_001");
   }
@@ -384,7 +381,6 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // HIGH_RATE_001(1억), MEDIUM_RATE_001(5천만)만 해당
     assertThat(result.getContent()).hasSize(2);
 
     List<String> productCodes = result.getContent().stream()
@@ -401,7 +397,7 @@ class DepositFilterServiceTest {
         .page(1)
         .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .joinWay(Arrays.asList("신규")) // "신규" 키워드 포함
+            .joinWay(Arrays.asList("신규"))
             .build())
         .build();
 
@@ -410,7 +406,7 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // "신규고객 우대" 조건이 있는 HIGH_RATE_001만 나와야 함
+    // "신규고객 우대" 조건이 있는 상품만
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
@@ -437,7 +433,7 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    // 모든 조건을 만족하는 HIGH_RATE_001만 나와야 함
+    // 모든 조건을 만족하는 상품만
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
     assertThat(result.getContent().get(0).getKorCoNm()).isEqualTo("우리은행");
@@ -494,7 +490,7 @@ class DepositFilterServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.getContent()).hasSize(3);
 
-    // 최고금리 내림차순: HIGH(4.20%) -> MEDIUM(2.90%) -> LOW(1.80%)
+    // 최고금리 내림차순
     List<String> productCodes = result.getContent().stream()
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
@@ -532,7 +528,7 @@ class DepositFilterServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.getContent()).hasSize(3);
 
-    // 기본금리 오름차순: LOW(1.50%) -> MEDIUM(2.60%) -> HIGH(3.70%)
+    // 기본금리 오름차순
     List<String> productCodes = result.getContent().stream()
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
@@ -560,12 +556,12 @@ class DepositFilterServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.getContent()).hasSize(3);
 
-    // 상품명 오름차순 정렬 확인 (MySQL 한글 정렬)
+    // 상품명 오름차순 정렬 확인 - DB 한글 정렬
     List<String> productNames = result.getContent().stream()
         .map(ProductSummaryResponse::getFinPrdtNm)
         .toList();
 
-    // 정렬 순서가 올바른지 확인 (첫 번째와 마지막만 확인)
+    // 정렬 순서가 올바른지 확인
     assertThat(productNames.get(0)).isEqualTo("고금리특별예금");
     assertThat(productNames.get(2)).isEqualTo("안정금리예금");
   }
@@ -573,7 +569,7 @@ class DepositFilterServiceTest {
   @Test
   @DisplayName("빈 결과 처리")
   void testEmptyResult() {
-    // Given - 존재하지 않는 금융회사로 필터링
+    // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
         .page(1)
         .size(10)

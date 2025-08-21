@@ -38,7 +38,7 @@ public enum PreConMapping {
   }
 
   /**
-   * 표시명으로 검색 키워드들 찾기 "비대면가입" → ["비대면", "인터넷", "스마트", "온라인", "스마트폰"]
+   * 표시명으로 검색 키워드들 찾기
    */
   public static Optional<List<String>> getKeywordsByDisplayName(String displayName) {
     return Arrays.stream(values())
@@ -48,7 +48,7 @@ public enum PreConMapping {
   }
 
   /**
-   * 검색 키워드로 표시명 찾기 "비대면" → "비대면가입"
+   * 검색 키워드로 표시명 찾기
    */
   public static Optional<String> getDisplayNameByKeyword(String keyword) {
     return Arrays.stream(values())

@@ -3,7 +3,7 @@ package com.project.savingbee.filtering.enums;
 import java.util.*;
 
 /**
- * 가입대상 코드 매핑 DB에 저장된 joinDeny 코드와 - 프론트에서 전달받는 표시명 간의 변환
+ * 가입대상 코드 매핑 - DB에 저장된 joinDeny 코드와 프론트에서 전달받는 표시명 간의 변환
  */
 
 public enum JoinDenyType {
@@ -28,7 +28,7 @@ public enum JoinDenyType {
   }
 
   /**
-   * 표시명으로 DB 코드 찾기 "제한없음" → "1"
+   * 표시명으로 DB 코드 찾기
    */
   public static Optional<String> getCodeByDisplayName(String displayName) {
     return Arrays.stream(values())
@@ -38,7 +38,7 @@ public enum JoinDenyType {
   }
 
   /**
-   * DB 코드로 표시명 찾기 "1" → "제한없음"
+   * DB 코드로 표시명 찾기
    */
   public static Optional<String> getDisplayNameByCode(String code) {
     return Arrays.stream(values())

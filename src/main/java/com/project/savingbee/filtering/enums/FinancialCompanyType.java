@@ -3,7 +3,7 @@ package com.project.savingbee.filtering.enums;
 import java.util.*;
 
 /**
- * 금융회사 유형 코드 매핑 DB의 금융회사 코드와 필터링 표시명 간의 변환
+ * 금융회사 유형 코드 매핑 - DB의 금융회사 코드와 필터링 표시명 간의 변환
  */
 public enum FinancialCompanyType {
   BANK("은행", "020000"),           // 일반 은행
@@ -27,7 +27,7 @@ public enum FinancialCompanyType {
   }
 
   /**
-   * 표시명으로 기관유형코드 찾기 "은행" → "020000"
+   * 표시명으로 기관유형코드 찾기
    */
   public static Optional<String> getCodeByDisplayName(String displayName) {
     return Arrays.stream(values())
@@ -37,7 +37,7 @@ public enum FinancialCompanyType {
   }
 
   /**
-   * 기관유형코드로 표시명 찾기 "020000" → "은행"
+   * 기관유형코드로 표시명 찾기
    */
   public static Optional<String> getDisplayNameByCode(String orgTypeCode) {
     return Arrays.stream(values())

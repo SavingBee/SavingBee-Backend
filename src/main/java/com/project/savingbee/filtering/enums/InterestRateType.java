@@ -3,7 +3,7 @@ package com.project.savingbee.filtering.enums;
 import java.util.*;
 
 /**
- * 이자계산방식 코드 매핑 DB의 intrRateType과 필터링 표시명 간의 변환
+ * 이자계산방식 코드 매핑 - DB의 intrRateType과 필터링 표시명 간의 변환
  */
 public enum InterestRateType {
   SIMPLE("단리", "S"),     // 단리 계산
@@ -26,7 +26,7 @@ public enum InterestRateType {
   }
 
   /**
-   * 표시명으로 DB 코드 찾기 "단리" → "S"
+   * 표시명으로 DB 코드 찾기
    */
   public static Optional<String> getCodeByDisplayName(String displayName) {
     return Arrays.stream(values())
@@ -36,7 +36,7 @@ public enum InterestRateType {
   }
 
   /**
-   * DB 코드로 표시명 찾기 "S" → "단리"
+   * DB 코드로 표시명 찾기
    */
   public static Optional<String> getDisplayNameByCode(String code) {
     return Arrays.stream(values())
