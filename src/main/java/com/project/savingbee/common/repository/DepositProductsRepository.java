@@ -27,6 +27,11 @@ public interface DepositProductsRepository extends JpaRepository<DepositProducts
   // 활성 상품을 최신 등록순으로 조회
   List<DepositProducts> findByIsActiveTrueOrderByCreatedAtDesc();
 
+  
+  // 활성 상품 조회 (추천 시스템용)
+  List<DepositProducts> findByIsActiveTrue();
+
+
   /**
    * 필터링 사용 QueryDSL
    */
@@ -36,6 +41,7 @@ public interface DepositProductsRepository extends JpaRepository<DepositProducts
       "LEFT JOIN FETCH dp.interestRates " +
       "WHERE dp.isActive = true")
   List<DepositProducts> findAllActiveWithRelations();
+
 
   @Query("SELECT DISTINCT dp FROM DepositProducts dp " +
       "LEFT JOIN FETCH dp.financialCompany " +
