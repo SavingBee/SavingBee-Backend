@@ -6,8 +6,7 @@ import lombok.Getter;
 public enum SocialProviderType {
 
     NAVER("네이버"),
-    GOOGLE("구글"),
-    KAKAO("카카오");
+    GOOGLE("구글");
 
     private final String description;
 
