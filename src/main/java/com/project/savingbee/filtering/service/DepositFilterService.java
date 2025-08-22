@@ -4,6 +4,9 @@ import com.project.savingbee.common.entity.DepositProducts;
 import com.project.savingbee.common.repository.DepositProductsRepository;
 import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
+import com.project.savingbee.filtering.dto.RangeFilter;
+import com.project.savingbee.filtering.enums.PreConMapping;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DepositFilterService {
+public class DepositFilterService extends BaseFilterService<DepositProducts,DepositFilterRequest>{
 
   private final DepositProductsRepository depositProductsRepository;
 
@@ -61,20 +64,6 @@ public class DepositFilterService {
     }
   }
 
-  /**
-   * 금리 정렬 여부 확인
-   */
-  private boolean isInterestRateSort(DepositFilterRequest request) {
-    if (!request.hasSort()) {
-      return true; // 기본값이 금리 정렬
-    }
-
-    String sortField = request.getSort().getField();
-    return "intr_rate2".equals(sortField) ||
-        "max_intr_rate".equals(sortField) ||
-        "intr_rate".equals(sortField) ||
-        "base_intr_rate".equals(sortField);
-  }
 
   /**
    * 서비스에서 금리 정렬 처리
@@ -118,6 +107,7 @@ public class DepositFilterService {
   /**
    * 상품명 정렬 처리
    */
+  // TODO: 디버그를 위한 주석 처리
   private Page<ProductSummaryResponse> filterWithBasicSort(DepositFilterRequest request) {
     log.debug("상품명 정렬 처리 시작");
 
@@ -148,34 +138,36 @@ public class DepositFilterService {
 //    Specification<DepositProducts> spec = Specification.where(isActiveProduct());
     Specification<DepositProducts> spec = isActiveProduct();
 
-    // 필터 조건이 있으면 적용
-    if (request.hasFilters()) {
-      DepositFilterRequest.Filters filters = request.getFilters();
+    // 필터가 없으면 JOIN 없이 기본 조건만 반환
+    if (!request.hasFilters()) {
+      return spec;
+    }
 
-      // 금융회사 번호 필터
-      if (filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty()) {
-        spec = spec.and(filterFinCoNum(filters.getFinCoNo()));
-      }
+    DepositFilterRequest.Filters filters = request.getFilters();
 
-      // 가입제한 필터
-      if (filters.getJoinDeny() != null && !filters.getJoinDeny().isEmpty()) {
-        spec = spec.and(filterJoinDeny(filters.getJoinDeny()));
-      }
+    // 금융회사 번호 필터
+    if (filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty()) {
+      spec = spec.and(filterFinCoNum(filters.getFinCoNo()));
+    }
 
-      // 금리 관련 필터
-      if (hasInterestRateFilters(filters)) {
-        spec = spec.and(filterInterestRate(filters));
-      }
+    // 가입제한 필터
+    if (filters.getJoinDeny() != null && !filters.getJoinDeny().isEmpty()) {
+      spec = spec.and(filterJoinDeny(filters.getJoinDeny()));
+    }
 
-      // 가입한도 범위 필터
-      if (filters.getMaxLimit() != null && filters.getMaxLimit().hasAnyValue()) {
-        spec = spec.and(rangeMaxLimit(filters.getMaxLimit()));
-      }
+    // 가입한도 범위 필터
+    if (filters.getMaxLimit() != null && filters.getMaxLimit().hasAnyValue()) {
+      spec = spec.and(rangeMaxLimit(filters.getMaxLimit()));
+    }
 
-      // 우대조건 필터
-      if (filters.getJoinWay() != null && !filters.getJoinWay().isEmpty()) {
-        spec = spec.and(hasPreferentialConditions(filters.getJoinWay()));
-      }
+    // 우대조건 필터
+    if (filters.getJoinWay() != null && !filters.getJoinWay().isEmpty()) {
+      spec = spec.and(hasPreferentialConditions(filters.getJoinWay()));
+    }
+
+    // 2. 마지막에 금리 관련 필터만 JOIN으로 처리
+    if (hasInterestRateFilters(filters)) {
+      spec = spec.and(filterInterestRate(filters));
     }
 
     return spec;
@@ -239,35 +231,6 @@ public class DepositFilterService {
     return products.stream()
         .sorted(comparator)
         .collect(Collectors.toList());
-  }
-
-  /**
-   * 상품명 정렬 Pageable 생성
-   */
-  private Pageable createPageableForDbSort(DepositFilterRequest request) {
-    Sort.Direction direction = Sort.Direction.ASC;
-    String sortField = "finPrdtNm"; // 기본값: 상품명
-
-    if (request.hasSort()) {
-      direction = request.getSort().isDescending() ? Sort.Direction.DESC : Sort.Direction.ASC;
-      String requestedField = request.getSort().getField();
-
-      switch (requestedField) {
-        case "fin_prdt_nm" -> sortField = "finPrdtNm";
-        case "kor_co_nm" -> sortField = "financialCompany.korCoNm";
-        case "max_limit" -> sortField = "maxLimit";
-        case "dcls_strt_day" -> sortField = "dclsStrtDay";
-        default -> {
-          log.debug("DB 정렬 지원하지 않는 필드 '{}', 상품명으로 대체", requestedField);
-          sortField = "finPrdtNm";
-        }
-      }
-    }
-
-    Sort sort = Sort.by(direction, sortField);
-    int pageNumber = Math.max(0, request.getPageNumber() - 1);
-
-    return PageRequest.of(pageNumber, request.getPageSize(), sort);
   }
 
   /**
@@ -362,7 +325,7 @@ public class DepositFilterService {
    * 가입 한도 조건 확인
    */
   private Specification<DepositProducts> rangeMaxLimit(
-      DepositFilterRequest.RangeFilter maxLimitRange) {
+      RangeFilter maxLimitRange) {
     return (root, query, cb) -> {
       List<Predicate> predicates = new ArrayList<>();
 
@@ -386,56 +349,66 @@ public class DepositFilterService {
     };
   }
 
+//  /**
+//   * 우대조건 필터
+//   */
+//  private Specification<DepositProducts> hasPreferentialConditions(List<String> joinWayConditions) {
+//    return (root, query, cb) -> {
+//      List<Predicate> conditionPredicates = new ArrayList<>();
+//
+//      for (String condition : joinWayConditions) {
+//        // 직접 TEXT 검색
+//        conditionPredicates.add(cb.like(
+//            cb.lower(root.get("spclCnd")),
+//            "%" + condition.toLowerCase() + "%"
+//        ));
+//      }
+//
+//      // 모든 우대조건들을 OR로 연결
+//      return conditionPredicates.isEmpty()
+//          ? cb.conjunction()
+//          : cb.or(conditionPredicates.toArray(new Predicate[0]));
+//    };
+//  }
+
   /**
-   * 우대조건 필터
+   * 우대조건 필터 - 코드 분리로 변경
    */
   private Specification<DepositProducts> hasPreferentialConditions(List<String> joinWayConditions) {
     return (root, query, cb) -> {
       List<Predicate> conditionPredicates = new ArrayList<>();
 
       for (String condition : joinWayConditions) {
-        // 직접 TEXT 검색
-        conditionPredicates.add(cb.like(
-            cb.lower(root.get("spclCnd")),
-            "%" + condition.toLowerCase() + "%"
-        ));
+        // PreConMapping에서 키워드들 찾기
+        Optional<List<String>> keywords = PreConMapping.getKeywordsByDisplayName(condition);
+
+        if (keywords.isPresent()) {
+          // 매핑된 키워드들로 OR 검색
+          List<Predicate> keywordPredicates = new ArrayList<>();
+          for (String keyword : keywords.get()) {
+            keywordPredicates.add(cb.like(
+                cb.lower(root.get("spclCnd")),
+                "%" + keyword.toLowerCase() + "%"
+            ));
+          }
+          // 각 조건의 키워드들은 OR로 연결
+          conditionPredicates.add(cb.or(keywordPredicates.toArray(new Predicate[0])));
+        } else {
+          // 매핑되지 않은 경우 직접 검색
+          conditionPredicates.add(cb.like(
+              cb.lower(root.get("spclCnd")),
+              "%" + condition.toLowerCase() + "%"
+          ));
+        }
       }
 
-      // 모든 우대조건들을 OR로 연결
+      // 여러 조건들은 OR로 연결 (하나라도 매칭되면 포함)
       return conditionPredicates.isEmpty()
           ? cb.conjunction()
           : cb.or(conditionPredicates.toArray(new Predicate[0]));
     };
   }
 
-  /**
-   * JOIN으로 인한 중복 제거 - list
-   */
-  private List<DepositProducts> removeDuplicates(List<DepositProducts> products) {
-    return products.stream()
-        .collect(Collectors.toMap(
-            DepositProducts::getFinPrdtCd,  // 상품코드로 중복 제거
-            product -> product,
-            (existing, replacement) -> existing,  // 중복 시 기존 것 유지
-            java.util.LinkedHashMap::new  // 순서 유지
-        ))
-        .values()
-        .stream()
-        .collect(Collectors.toList());
-  }
-
-  /**
-   * JOIN으로 인한 중복 제거 - page
-   */
-  private Page<DepositProducts> removeDuplicatesFromPage(Page<DepositProducts> products) {
-    List<DepositProducts> distinctList = removeDuplicates(products.getContent());
-
-    return new PageImpl<>(
-        distinctList,
-        products.getPageable(),
-        products.getTotalElements()  // 전체 개수는 원래 값 유지
-    );
-  }
 
   /**
    * Entity를 Response DTO로 변환
@@ -489,5 +462,11 @@ public class DepositFilterService {
           .baseIntrRate(BigDecimal.ZERO)
           .build();
     }
+  }
+
+  // 추상 메서드 구현
+  @Override
+  protected String getProductCode(DepositProducts product) {
+    return product.getFinPrdtCd();
   }
 }

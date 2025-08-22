@@ -59,8 +59,8 @@ class DepositFilterControllerTest {
 
   @Test
   @WithMockUser
-  @DisplayName("필터 파라미터 테스트")
-  void testFilterParameters() throws Exception {
+  @DisplayName("금융회사 유형 필터링 - 표시명 사용")
+  void testFinancialCompanyTypeFilter() throws Exception {
     // Given
     List<ProductSummaryResponse> mockProducts = createMockProducts();
     Page<ProductSummaryResponse> mockPage = new PageImpl<>(mockProducts,
@@ -70,12 +70,97 @@ class DepositFilterControllerTest {
 
     // When & Then
     mockMvc.perform(get("/products/filter/deposite")
-            .param("finCoNo", "0010001,0010002")
+            .param("finCoType", "은행,저축은행")  // 변경됨
             .param("saveTrm", "12,24")
+            .param("sortField", "intr_rate2")
+            .param("sortOrder", "desc"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(3)));
+  }
+
+  @Test
+  @WithMockUser
+  @DisplayName("가입대상 필터링 - 표시명 사용")
+  void testJoinDenyFilter() throws Exception {
+    // Given
+    List<ProductSummaryResponse> mockProducts = createMockProducts();
+    Page<ProductSummaryResponse> mockPage = new PageImpl<>(mockProducts,
+        PageRequest.of(0, 10), mockProducts.size());
+
+    when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
+
+    // When & Then
+    mockMvc.perform(get("/products/filter/deposite")
+            .param("joinDeny", "제한없음,서민전용")  // 변경됨
+            .param("sortField", "intr_rate2")
+            .param("sortOrder", "desc"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(3)));
+  }
+
+  @Test
+  @WithMockUser
+  @DisplayName("이자계산방식 필터링 - 표시명 사용")
+  void testInterestRateTypeFilter() throws Exception {
+    // Given
+    List<ProductSummaryResponse> mockProducts = createMockProducts();
+    Page<ProductSummaryResponse> mockPage = new PageImpl<>(mockProducts,
+        PageRequest.of(0, 10), mockProducts.size());
+
+    when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
+
+    // When & Then
+    mockMvc.perform(get("/products/filter/deposite")
+            .param("intrRateType", "단리,복리")  // 변경됨
+            .param("sortField", "intr_rate2")
+            .param("sortOrder", "desc"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(3)));
+  }
+
+  @Test
+  @WithMockUser
+  @DisplayName("복합 필터링 - 모든 표시명 사용")
+  void testComplexFilteringWithDisplayNames() throws Exception {
+    // Given
+    List<ProductSummaryResponse> mockProducts = createMockProducts();
+    Page<ProductSummaryResponse> mockPage = new PageImpl<>(mockProducts,
+        PageRequest.of(0, 10), mockProducts.size());
+
+    when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
+
+    // When & Then
+    mockMvc.perform(get("/products/filter/deposite")
+            .param("finCoType", "은행")          // 변경됨
+            .param("joinDeny", "제한없음")        // 변경됨
+            .param("intrRateType", "단리")       // 변경됨
+            .param("saveTrm", "12")
             .param("intrRateMin", "2.0")
             .param("intrRateMax", "5.0")
             .param("sortField", "intr_rate2")
             .param("sortOrder", "desc"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(3)));
+  }
+
+  @Test
+  @WithMockUser
+  @DisplayName("우대조건 필터링")
+  void testPreferentialConditionFilter() throws Exception {
+    // Given
+    List<ProductSummaryResponse> mockProducts = createMockProducts();
+    Page<ProductSummaryResponse> mockPage = new PageImpl<>(mockProducts,
+        PageRequest.of(0, 10), mockProducts.size());
+
+    when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
+
+    // When & Then
+    mockMvc.perform(get("/products/filter/deposite")
+            .param("joinWay", "비대면가입,첫거래"))
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(3)));
@@ -106,6 +191,10 @@ class DepositFilterControllerTest {
   @WithMockUser
   @DisplayName("잘못된 저축기간 파라미터")
   void testInvalidSavingTermParameter() throws Exception {
+    // Given - 예외 발생 시나리오 Mock 설정
+    when(depositFilterService.depositFilter(any()))
+        .thenThrow(new IllegalArgumentException("저축기간은 숫자만 입력 가능합니다: invalid,12"));
+
     // When & Then
     mockMvc.perform(get("/products/filter/deposite")
             .param("saveTrm", "invalid,12"))
