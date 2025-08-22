@@ -349,28 +349,6 @@ public class DepositFilterService extends BaseFilterService<DepositProducts,Depo
     };
   }
 
-//  /**
-//   * 우대조건 필터
-//   */
-//  private Specification<DepositProducts> hasPreferentialConditions(List<String> joinWayConditions) {
-//    return (root, query, cb) -> {
-//      List<Predicate> conditionPredicates = new ArrayList<>();
-//
-//      for (String condition : joinWayConditions) {
-//        // 직접 TEXT 검색
-//        conditionPredicates.add(cb.like(
-//            cb.lower(root.get("spclCnd")),
-//            "%" + condition.toLowerCase() + "%"
-//        ));
-//      }
-//
-//      // 모든 우대조건들을 OR로 연결
-//      return conditionPredicates.isEmpty()
-//          ? cb.conjunction()
-//          : cb.or(conditionPredicates.toArray(new Predicate[0]));
-//    };
-//  }
-
   /**
    * 우대조건 필터 - 코드 분리로 변경
    */

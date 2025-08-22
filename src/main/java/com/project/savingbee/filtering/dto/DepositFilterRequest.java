@@ -35,42 +35,4 @@ public class DepositFilterRequest extends BaseFilterRequest {
   public boolean hasFilters() {
     return filters != null;
   }
-
-  // TODO: 삭제 예정 - 사용하지 않음?
-  // 각 필터 조건 존재 여부 확인 메서드들
-  public boolean hasFinCoFilter() {
-    return hasFilters() && filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty();
-  }
-
-  public boolean hasJoinWayFilter() {
-    return hasFilters() && filters.getJoinWay() != null && !filters.getJoinWay().isEmpty();
-  }
-
-  public boolean hasJoinDenyFilter() {
-    return hasFilters() && filters.getJoinDeny() != null && !filters.getJoinDeny().isEmpty();
-  }
-
-  public boolean hasSaveTrmFilter() {
-    return hasFilters() && filters.getSaveTrm() != null && !filters.getSaveTrm().isEmpty();
-  }
-
-  public boolean hasIntrRateTypeFilter() {
-    return hasFilters() && filters.getIntrRateType() != null && !filters.getIntrRateType()
-        .isEmpty();
-  }
-
-  public boolean hasIntrRateFilter() {
-    return hasFilters() && filters.getIntrRate() != null && filters.getIntrRate().hasAnyValue();
-  }
-
-  public boolean hasIntrRate2Filter() {
-    return hasFilters() && filters.getIntrRate2() != null && filters.getIntrRate2().hasAnyValue();
-  }
-
-  public boolean hasMaxLimitFilter() {
-    return hasFilters() && filters.getMaxLimit() != null && filters.getMaxLimit().hasAnyValue();
-  }
-
-
-
 }
