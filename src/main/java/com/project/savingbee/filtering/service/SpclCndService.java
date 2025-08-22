@@ -37,27 +37,27 @@ public class SpclCndService {
     }
   }
 
-  /**
-   * 두 우대조건 세트가 매칭되는지 확인
-   *
-   * @param productConditions 상품의 우대조건들
-   * @param searchConditions  검색하려는 우대조건들
-   * @return 매칭 여부
-   */
-  public boolean matchesConditions(Set<SpclCndType> productConditions,
-      Set<SpclCndType> searchConditions) {
-
-    if (searchConditions == null || searchConditions.isEmpty()) {
-      return true; // 검색 조건이 없으면 모든 상품 매칭
-    }
-
-    // 검색하는 조건 중 하나라도 상품에 있으면 매칭 (OR 조건)
-    for (SpclCndType searchCondition : searchConditions) {
-      if (productConditions.contains(searchCondition)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
+//  /**
+//   * 두 우대조건 세트가 매칭되는지 확인
+//   *
+//   * @param productConditions 상품의 우대조건들
+//   * @param searchConditions  검색하려는 우대조건들
+//   * @return 매칭 여부
+//   */
+//  public boolean matchesConditions(Set<SpclCndType> productConditions,
+//      Set<SpclCndType> searchConditions) {
+//
+//    if (searchConditions == null || searchConditions.isEmpty()) {
+//      return true; // 검색 조건이 없으면 모든 상품 매칭
+//    }
+//
+//    // 검색하는 조건 중 하나라도 상품에 있으면 매칭 (OR 조건)
+//    for (SpclCndType searchCondition : searchConditions) {
+//      if (productConditions.contains(searchCondition)) {
+//        return true;
+//      }
+//    }
+//
+//    return false;
+//  }
 }

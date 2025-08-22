@@ -8,13 +8,17 @@ import com.project.savingbee.common.repository.DepositInterestRatesRepository;
 import com.project.savingbee.common.repository.FinancialCompaniesRepository;
 import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
+import com.project.savingbee.filtering.dto.RangeFilter;
+import com.project.savingbee.filtering.dto.SortFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -30,6 +34,9 @@ import java.util.List;
 @ActiveProfiles("test")
 @DisplayName("예금 필터 서비스 통합 테스트")
 class DepositFilterServiceTest {
+
+  @MockitoBean
+  private ClientRegistrationRepository clientRegistrationRepository;
 
   @Autowired
   private DepositFilterService depositFilterService;
@@ -215,9 +222,10 @@ class DepositFilterServiceTest {
   void testBasicIntegrationFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
+        .filters(null)  // 필터 없음
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -244,12 +252,12 @@ class DepositFilterServiceTest {
   void testFinancialCompanyFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
             .finCoNo(Arrays.asList("0010001", "0010002"))
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -269,12 +277,12 @@ class DepositFilterServiceTest {
   void testSavingTermFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .saveTrm(Arrays.asList(24)) // 24개월
+            .saveTrm(Arrays.asList(24))
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -295,12 +303,12 @@ class DepositFilterServiceTest {
   void testInterestRateTypeFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .intrRateType(Arrays.asList("M")) // 복리
+            .intrRateType(Arrays.asList("M"))
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -317,15 +325,15 @@ class DepositFilterServiceTest {
   void testBaseInterestRateRangeFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .intrRate(DepositFilterRequest.RangeFilter.builder()
+            .intrRate(RangeFilter.builder()
                 .min(new BigDecimal("2.00"))
                 .max(new BigDecimal("3.00"))
-                .build()) // 기본금리 2.00% ~ 3.00%
+                .build())
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -342,15 +350,15 @@ class DepositFilterServiceTest {
   void testPreferentialInterestRateRangeFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .intrRate2(DepositFilterRequest.RangeFilter.builder()
+            .intrRate2(RangeFilter.builder()
                 .min(new BigDecimal("2.00"))
                 .max(new BigDecimal("3.50"))
-                .build()) // 우대금리 2.00% ~ 3.50%
+                .build())
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -367,14 +375,14 @@ class DepositFilterServiceTest {
   void testMaxLimitFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .maxLimit(DepositFilterRequest.RangeFilter.builder()
-                .min(new BigDecimal("40000000")) // 4천만원 이상
+            .maxLimit(RangeFilter.builder()
+                .min(new BigDecimal("40000000"))
                 .build())
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -389,24 +397,45 @@ class DepositFilterServiceTest {
     assertThat(productCodes).containsExactlyInAnyOrder("HIGH_RATE_001", "MEDIUM_RATE_001");
   }
 
+//  @Test
+//  @DisplayName("우대조건 텍스트 검색")
+//  void testPreferentialConditionTextSearch() {
+//    // Given
+//    DepositFilterRequest request = DepositFilterRequest.builder()
+//        .page(1)
+//        .size(10)
+//        .filters(DepositFilterRequest.Filters.builder()
+//            .joinWay(Arrays.asList("신규"))
+//            .build())
+//        .build();
+//
+//    // When
+//    Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
+//
+//    // Then
+//    assertThat(result).isNotNull();
+//    // "신규고객 우대" 조건이 있는 상품만
+//    assertThat(result.getContent()).hasSize(1);
+//    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
+//  }
+
   @Test
-  @DisplayName("우대조건 텍스트 검색")
+  @DisplayName("우대조건 텍스트 검색 - 코드 분리로 변경")
   void testPreferentialConditionTextSearch() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .joinWay(Arrays.asList("신규"))
+            .joinWay(Arrays.asList("첫거래"))  // PreConMapping의 displayName
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
 
     // Then
     assertThat(result).isNotNull();
-    // "신규고객 우대" 조건이 있는 상품만
     assertThat(result.getContent()).hasSize(1);
     assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
@@ -416,17 +445,17 @@ class DepositFilterServiceTest {
   void testComplexFiltering() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("0010001", "0010002")) // 우리은행, 국민은행
-            .saveTrm(Arrays.asList(12)) // 12개월
-            .intrRateType(Arrays.asList("S")) // 단리
-            .intrRate2(DepositFilterRequest.RangeFilter.builder()
-                .min(new BigDecimal("3.00")) // 우대금리 3.00% 이상
+            .finCoNo(Arrays.asList("0010001", "0010002"))
+            .saveTrm(Arrays.asList(12))
+            .intrRateType(Arrays.asList("S"))
+            .intrRate2(RangeFilter.builder()
+                .min(new BigDecimal("3.00"))
                 .build())
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -444,9 +473,10 @@ class DepositFilterServiceTest {
   void testPagination() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(2) // 페이지 크기 2
+        .filters(null)
         .build();
+    request.setPage(1);
+    request.setSize(2);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -460,9 +490,10 @@ class DepositFilterServiceTest {
 
     // 두 번째 페이지 요청
     DepositFilterRequest secondPageRequest = DepositFilterRequest.builder()
-        .page(2)
-        .size(2)
+        .filters(null)
         .build();
+    secondPageRequest.setPage(2);
+    secondPageRequest.setSize(2);
 
     Page<ProductSummaryResponse> secondPage = depositFilterService.depositFilter(secondPageRequest);
 
@@ -475,13 +506,14 @@ class DepositFilterServiceTest {
   void testMaxInterestRateDescendingSortAtServiceLevel() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
-        .sort(DepositFilterRequest.Sort.builder()
-            .field("intr_rate2")
-            .order("desc")
-            .build())
+        .filters(null)
         .build();
+    request.setPage(1);
+    request.setSize(10);
+    request.setSort(SortFilter.builder()
+        .field("intr_rate2")
+        .order("desc")
+        .build());
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -513,14 +545,14 @@ class DepositFilterServiceTest {
   void testBaseInterestRateAscendingSortAtServiceLevel() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
-        .sort(DepositFilterRequest.Sort.builder()
-            .field("intr_rate")
-            .order("asc")
-            .build())
+        .filters(null)
         .build();
-
+    request.setPage(1);
+    request.setSize(10);
+    request.setSort(SortFilter.builder()
+        .field("intr_rate")
+        .order("asc")
+        .build());
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
 
@@ -541,13 +573,14 @@ class DepositFilterServiceTest {
   void testProductNameSortingAtDatabaseLevel() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
-        .sort(DepositFilterRequest.Sort.builder()
-            .field("fin_prdt_nm")
-            .order("asc")
-            .build())
+        .filters(null)
         .build();
+    request.setPage(1);
+    request.setSize(10);
+    request.setSort(SortFilter.builder()
+        .field("fin_prdt_nm")
+        .order("asc")
+        .build());
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -571,12 +604,12 @@ class DepositFilterServiceTest {
   void testEmptyResult() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(10)
         .filters(DepositFilterRequest.Filters.builder()
             .finCoNo(Arrays.asList("9999999")) // 존재하지 않는 금융회사
             .build())
         .build();
+    request.setPage(1);
+    request.setSize(10);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -593,9 +626,10 @@ class DepositFilterServiceTest {
   void testDtoConversionAccuracy() {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
-        .page(1)
-        .size(1) // 한 개만 조회
+        .filters(null)
         .build();
+    request.setPage(1);
+    request.setSize(1);
 
     // When
     Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
@@ -620,5 +654,26 @@ class DepositFilterServiceTest {
     assertThatThrownBy(() -> depositFilterService.depositFilter(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("필터링 요청이 null입니다.");
+  }
+
+  @Test
+  @DisplayName("상품명 정렬 - JOIN 없이 페이징 테스트")
+  void testProductNameSortingWithoutJoin() {
+    // Given - 금리 필터 없음
+    DepositFilterRequest request = DepositFilterRequest.builder()
+        .filters(null)  // JOIN 발생하지 않음
+        .build();
+    request.setPage(1);
+    request.setSize(1);
+    request.setSort(SortFilter.builder()
+        .field("fin_prdt_nm")
+        .order("asc")
+        .build());
+
+    // When
+    Page<ProductSummaryResponse> result = depositFilterService.depositFilter(request);
+
+    // Then
+    assertThat(result.getContent()).hasSize(1);  // 이제 성공할 것
   }
 }
