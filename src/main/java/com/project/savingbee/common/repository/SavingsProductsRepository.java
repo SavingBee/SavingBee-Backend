@@ -5,10 +5,12 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SavingsProductsRepository extends JpaRepository<SavingsProducts, String> {
+public interface SavingsProductsRepository extends JpaRepository<SavingsProducts, String>,
+    JpaSpecificationExecutor<SavingsProducts> {
 
   // 마지막 스캔 이후 수정된 상품만 조회(스캔 후보 수집용)
   List<SavingsProducts> findByUpdatedAtAfter(LocalDateTime since);

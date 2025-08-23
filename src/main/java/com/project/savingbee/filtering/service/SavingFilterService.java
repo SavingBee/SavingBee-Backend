@@ -2,18 +2,19 @@ package com.project.savingbee.filtering.service;
 
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
-import com.project.savingbee.filtering.dto.ProductSummaryResponse;
-import com.project.savingbee.filtering.dto.SavingFilterRequest;
+import com.project.savingbee.filtering.dto.*;
 import com.project.savingbee.filtering.enums.PreConMapping;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -64,11 +65,31 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
    */
   private Page<ProductSummaryResponse> filterWithRateSort (SavingFilterRequest request){
     // 필터링 조건만 적용하여 모든 데이터 조회
+    Specification<SavingsProducts> spec = buildFilterSpecification(request);
+    List<SavingsProducts> allProducts = savingsProductsRepository.findAll(spec);
     // 중복 제거
+    List<SavingsProducts> distinctProducts = removeDuplicates(allProducts);
     // 서비스 레벨에서 금리 기준 정렬
+    List<SavingsProducts> sortedProducts = sortByInterestRate(distinctProducts, request);
     // 페이징 적용
+    int pageNumber = Math.max(0, request.getPageNumber() - 1);
+    int pageSize = request.getPageSize();
+    int start = pageNumber * pageSize;
+    int end = Math.min(start + pageSize, sortedProducts.size());
+
+    List<SavingsProducts> pagedProducts = sortedProducts.subList(start, end);
     // DTO 변환
+    List<ProductSummaryResponse> responses = pagedProducts.stream()
+        .map(this::toProductSummaryResponse)
+        .collect(Collectors.toList());
     // Page 객체 생성
+    Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+    log.info("서비스 레벨 정렬 결과: 총 {}개 상품 중 {}개 반환 (페이지: {}/{})",
+        sortedProducts.size(), responses.size(),
+        pageNumber + 1, (sortedProducts.size() + pageSize - 1) / pageSize);
+
+    return new PageImpl<>(responses, pageable, sortedProducts.size());
   }
 
   /**
@@ -76,22 +97,64 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
    */
   private Page<ProductSummaryResponse> filterWithBasicSort(SavingFilterRequest request){
     // 페이징 조건 생성
+    Specification<SavingsProducts> spec = buildFilterSpecification(request);
     // 페이징 및 정렬 설정
+    Pageable pageable = createPageableForDbSort(request);
     // 쿼리 실행
+    Page<SavingsProducts> products = savingsProductsRepository.findAll(spec, pageable);
     // 중복 제거
+    Page<SavingsProducts> distinctProducts = removeDuplicatesFromPage(products);
+
+    log.info("DB 레벨 정렬 결과: 총 {}개 상품 중 {}개 반환 (페이지: {}/{})",
+        distinctProducts.getTotalElements(), distinctProducts.getNumberOfElements(),
+        distinctProducts.getNumber() + 1, distinctProducts.getTotalPages());
     // DTO 변환 및 반환
+    return distinctProducts.map(this::toProductSummaryResponse);
   }
 
   /**
    * 필터링 조건만 생성
    */
   private Specification<SavingsProducts> buildFilterSpecification(SavingFilterRequest request){
+    Specification<SavingsProducts> spec = isActiveProduct();
+
     // 필터가 없으면 JOIN없이 기본 조건만 반환
+    if (!request.hasFilters()) {
+      return spec;
+    }
+
+    SavingFilterRequest.Filters filters = request.getFilters();
+
     // 금융회사 번호 필터
+    if (filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty()) {
+      spec = spec.and(filterFinCoNum(filters.getFinCoNo()));
+    }
+
     // 가입 제한 필터
+    if (filters.getJoinDeny() != null && !filters.getJoinDeny().isEmpty()) {
+      spec = spec.and(filterJoinDeny(filters.getJoinDeny()));
+    }
+
     // 월 저축금 한도 필터
+    if (filters.getMonthlyMaxLimit() != null) {
+      spec = spec.and(monthlyMaxLimit(filters.getMonthlyMaxLimit()));
+    }
+
     // 총 저축금 한도 필터
+    if (filters.getTotalMaxLimit() != null) {
+      spec = spec.and(totalMaxLimit(filters.getTotalMaxLimit()));
+    }
+
+    // 우대 조건 필터
+    if (filters.getJoinWay() != null && !filters.getJoinWay().isEmpty()) {
+      spec = spec.and(hasPreferentialConditions(filters.getJoinWay()));
+    }
+
     // 금리 관련 필터만 JOIN으로 처리
+    if (hasInterestRateFilters(filters)) {
+      spec = spec.and(filterInterestRate(filters));
+    }
+    return spec;
   }
 
   /**
@@ -99,9 +162,61 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
    */
   private List<SavingsProducts> sortByInterestRate(List<SavingsProducts> products, SavingFilterRequest request){
     // 최고 금리 정렬
-    // 기본 금리 정렬
-    // 디폴트: 최고 금리
+    String sortField = request.hasSort() ? request.getSort().getField() : "intr_rate2";
+    boolean isDescending = request.hasSort() ? request.getSort().isDescending() : true;
+
+    Comparator<SavingsProducts> comparator;
+
+    switch (sortField) {
+      case "intr_rate2", "max_intr_rate" -> {
+        comparator = Comparator.comparing(product -> {
+          if (product.getInterestRates() == null || product.getInterestRates().isEmpty()) {
+            return BigDecimal.ZERO;
+          }
+          return product.getInterestRates().stream()
+              .map(rate -> rate.getIntrRate2() != null ? rate.getIntrRate2() : rate.getIntrRate())
+              .filter(rate -> rate != null)
+              .max(BigDecimal::compareTo)
+              .orElse(BigDecimal.ZERO);
+        });
+      }
+      // 기본 금리 정렬
+      case "intr_rate", "base_intr_rate" -> {
+        comparator = Comparator.comparing(product -> {
+          if (product.getInterestRates() == null || product.getInterestRates().isEmpty()) {
+            return BigDecimal.ZERO;
+          }
+          return product.getInterestRates().stream()
+              .map(rate -> rate.getIntrRate())
+              .filter(rate -> rate != null)
+              .max(BigDecimal::compareTo)
+              .orElse(BigDecimal.ZERO);
+        });
+      }
+      // 디폴트: 최고 금리
+      default -> {
+        log.warn("지원하지 않는 금리 정렬 필드: {}, 최고금리로 대체", sortField);
+        comparator = Comparator.comparing(product -> {
+          if (product.getInterestRates() == null || product.getInterestRates().isEmpty()) {
+            return BigDecimal.ZERO;
+          }
+          return product.getInterestRates().stream()
+              .map(rate -> rate.getIntrRate2() != null ? rate.getIntrRate2() : rate.getIntrRate())
+              .filter(rate -> rate != null)
+              .max(BigDecimal::compareTo)
+              .orElse(BigDecimal.ZERO);
+        });
+      }
+    }
+
     // 정렬 방향
+    if (isDescending) {
+      comparator = comparator.reversed();
+    }
+
+    return products.stream()
+        .sorted(comparator)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -165,6 +280,11 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
       predicates.add(interestRatesJoin.get("intrRateType").in(filters.getIntrRateType()));
     }
 
+    // 적립방식 조건
+    if (filters.getRsrvType() != null && !filters.getRsrvType().isEmpty()) {
+      predicates.add(interestRatesJoin.get("rsrvType").in(filters.getRsrvType()));
+    }
+
     // 기본 금리 범위
     if (filters.getIntrRate() != null) {
       if (filters.getIntrRate().hasMinValue()) {
@@ -192,9 +312,26 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
     return cb.and(predicates.toArray(new Predicate[0]));
   }
 
-  // 월 저축금 확인
-  private Specification<SavingsProducts> monthlyMaxLimit{
-    // 사용자가 입력한 월 저축금보다 상품의 월 저축금(MaxLimit이 커야함)
+  /**
+   * 월 저축금 확인 (TODO: 구현 필요)
+   */
+  private Specification<SavingsProducts> monthlyMaxLimit(Integer monthlyLimit) {
+    // 사용자가 입력한 월 저축금보다 상품의 월 저축금(MaxLimit)이 커야함
+    return (root, query, cb) -> {
+      // TODO: 실제 구현 필요
+      return cb.conjunction();
+    };
+  }
+
+  /**
+   * 총 저축금 확인 (TODO: 구현 필요)
+   */
+  private Specification<SavingsProducts> totalMaxLimit(Integer totalLimit) {
+    // 사용자가 입력한 총 저축금보다 상품의 총 저축금이 커야함.
+    return (root, query, cb) -> {
+      // TODO: 실제 구현 필요 (월저축금 × 저축기간으로 계산)
+      return cb.conjunction();
+    };
   }
 
   // 우대조건 필터
@@ -232,17 +369,6 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
           : cb.or(conditionPredicates.toArray(new Predicate[0]));
     };
   }
-
-  /**
-   * 기타유의사항(etcNote)에서 총 저축금에 관한 내용 찾기
-   */
-  private Specification<SavingsProducts> totalMaxLimit{
-    // 사용자가 입력한 총 저축금보다 상품의 총 저축금이 커야함.
-  }
-
-  /**
-   * 적립 방식에 대한 필터
-   */
 
   /**
    * Entity를 Response DTO로 변환
@@ -299,6 +425,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   }
 
   // 추상 메서드 구현
+  @Override
   protected String getProductCode(SavingsProducts product) {
     return product.getFinPrdtCd();
   }

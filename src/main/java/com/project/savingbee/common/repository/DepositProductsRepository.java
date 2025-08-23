@@ -33,7 +33,7 @@ public interface DepositProductsRepository extends JpaRepository<DepositProducts
 
 
 //  /**
-//   * 필터링 사용 QueryDSL
+//   * 필터링 사용 Query
 //   */
 //  // 연관관계 함께 로딩하는 메서드
 //  @Query("SELECT DISTINCT dp FROM DepositProducts dp " +
