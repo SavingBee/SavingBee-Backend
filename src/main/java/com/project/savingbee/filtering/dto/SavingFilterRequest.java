@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavingFilterRequest extends BaseFilterRequest{
+public class SavingFilterRequest extends BaseFilterRequest {
 
   private Filters filters;
 
@@ -23,7 +23,8 @@ public class SavingFilterRequest extends BaseFilterRequest{
   @Builder
   @NoArgsConstructor
   @AllArgsConstructor
-  public static class Filters{
+  public static class Filters {
+
     private List<String> finCoNo;           // 금융회사 번호들
     private List<String> joinWay;           // 우대조건들
     private List<String> joinDeny;          // 가입제한

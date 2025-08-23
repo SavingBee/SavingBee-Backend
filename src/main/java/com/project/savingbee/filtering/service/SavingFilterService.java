@@ -140,11 +140,6 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
       spec = spec.and(monthlyMaxLimit(filters.getMonthlyMaxLimit()));
     }
 
-    // 총 저축금 한도 필터
-    if (filters.getTotalMaxLimit() != null) {
-      spec = spec.and(totalMaxLimit(filters.getTotalMaxLimit()));
-    }
-
     // 우대 조건 필터
     if (filters.getJoinWay() != null && !filters.getJoinWay().isEmpty()) {
       spec = spec.and(hasPreferentialConditions(filters.getJoinWay()));
@@ -229,8 +224,8 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 금융회사 번호 필터
    */
-  private Specification<SavingsProducts> filterFinCoNum(List<String> finCoNumber){
-    return (root, query, cb) -> root.get("finCoNo").in();
+  private Specification<SavingsProducts> filterFinCoNum(List<String> finCoNumbers){
+    return (root, query, cb) -> root.get("finCoNo").in(finCoNumbers);
   }
 
   /**
@@ -246,8 +241,10 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   private boolean hasInterestRateFilters(SavingFilterRequest.Filters filters){
     return (filters.getSaveTrm() != null && !filters.getSaveTrm().isEmpty()) ||
         (filters.getIntrRateType() != null && !filters.getIntrRateType().isEmpty()) ||
+        (filters.getRsrvType() != null && !filters.getRsrvType().isEmpty()) ||
         (filters.getIntrRate() != null && filters.getIntrRate().hasAnyValue()) ||
-        (filters.getIntrRate2() != null && filters.getIntrRate2().hasAnyValue());
+        (filters.getIntrRate2() != null && filters.getIntrRate2().hasAnyValue()) ||
+        (filters.getTotalMaxLimit() != null);
   }
 
   /**
@@ -257,15 +254,15 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
     return (root, query, cb) -> {
       // 금리 조건 적용
       var interestRatesJoin = root.join("interestRates", JoinType.LEFT);
-
-      return conditionInterestRate(filters, interestRatesJoin, cb);
+      return conditionInterestRate(filters, root, interestRatesJoin, cb);
     };
   }
 
   /**
-   * 금리 및 저축 기간 조건
+   * 금리, 저축 기간, 총 저축금 조건
    */
   private Predicate conditionInterestRate(SavingFilterRequest.Filters filters,
+      jakarta.persistence.criteria.Root<?> root,
       jakarta.persistence.criteria.Join<?, ?> interestRatesJoin,
       jakarta.persistence.criteria.CriteriaBuilder cb) {
     List<Predicate> predicates = new ArrayList<>();
@@ -309,28 +306,51 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
       }
     }
 
+    // 총 저축금 조건
+    if (filters.getTotalMaxLimit() != null) {
+      if (filters.getSaveTrm() != null && !filters.getSaveTrm().isEmpty()) {
+        // 1. 저축기간을 입력한 경우: 입력된 기간들에 대해 계산
+        List<Predicate> totalPredicates = new ArrayList<>(); // 사용자가 선택한 기간들 리스트
+        for (Integer period : filters.getSaveTrm()) {
+          var calculatedTotal = cb.prod(
+              cb.coalesce(root.get("maxLimit"), Integer.MAX_VALUE), // 해당 기간의 월 최대 한도
+              period
+          );
+          totalPredicates.add(cb.and(
+              cb.equal(interestRatesJoin.get("saveTrm"), period),
+              cb.greaterThanOrEqualTo(calculatedTotal, filters.getTotalMaxLimit())
+          ));
+        }
+        predicates.add(cb.or(
+            cb.isNull(root.get("maxLimit")), // 제한없음
+            cb.or(totalPredicates.toArray(new Predicate[0]))
+        ));
+      } else {
+        // 2. 저축기간 미입력: 현재 JOIN된 기간으로 계산
+        var calculatedTotal = cb.prod(  // 해당 상품에서 최대 기간으로 최대 한도 계산
+            cb.coalesce(root.get("maxLimit"), Integer.MAX_VALUE),
+            interestRatesJoin.get("saveTrm")
+        );
+        predicates.add(cb.or(
+            cb.isNull(root.get("maxLimit")), // 제한없음
+            cb.greaterThanOrEqualTo(calculatedTotal, filters.getTotalMaxLimit())
+        ));
+      }
+    }
+
     return cb.and(predicates.toArray(new Predicate[0]));
   }
 
   /**
-   * 월 저축금 확인 (TODO: 구현 필요)
+   * 월 저축금 확인
    */
   private Specification<SavingsProducts> monthlyMaxLimit(Integer monthlyLimit) {
     // 사용자가 입력한 월 저축금보다 상품의 월 저축금(MaxLimit)이 커야함
     return (root, query, cb) -> {
-      // TODO: 실제 구현 필요
-      return cb.conjunction();
-    };
-  }
-
-  /**
-   * 총 저축금 확인 (TODO: 구현 필요)
-   */
-  private Specification<SavingsProducts> totalMaxLimit(Integer totalLimit) {
-    // 사용자가 입력한 총 저축금보다 상품의 총 저축금이 커야함.
-    return (root, query, cb) -> {
-      // TODO: 실제 구현 필요 (월저축금 × 저축기간으로 계산)
-      return cb.conjunction();
+      return cb.or(
+          cb.isNull(root.get("maxLimit")),  // 제한없음인 상품 - maxLimit이 null
+          cb.greaterThanOrEqualTo(root.get("maxLimit"), monthlyLimit)  // 월 저축금이 요청금액 이상인 상품
+      );
     };
   }
 
