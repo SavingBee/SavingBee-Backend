@@ -87,21 +87,21 @@ public class DepositFilterController {
     // Filters 객체 생성
     DepositFilterRequest.Filters.FiltersBuilder filtersBuilder = DepositFilterRequest.Filters.builder();
 
-    // 금융회사 유형 변환 추가
+    // 금융회사 유형 변환
     if (finCoType != null && !finCoType.trim().isEmpty()) {
       List<String> displayNames = FilterParsingUtil.parseStringList(finCoType);
       List<String> codes = FilterMappingUtil.convertFinancialCompanyNamesToCodes(displayNames);
       filtersBuilder.finCoNo(codes);
     }
 
-    // 가입대상 변환 추가
+    // 가입대상 변환
     if (joinDeny != null && !joinDeny.trim().isEmpty()) {
       List<String> displayNames = FilterParsingUtil.parseStringList(joinDeny);
       List<String> codes = FilterMappingUtil.convertJoinDenyNamesToCodes(displayNames);
       filtersBuilder.joinDeny(codes);
     }
 
-    // 이자계산방식 변환 추가
+    // 이자계산방식 변환
     if (intrRateType != null && !intrRateType.trim().isEmpty()) {
       List<String> displayNames = FilterParsingUtil.parseStringList(intrRateType);
       List<String> codes = FilterMappingUtil.convertInterestRateNamesToCodes(displayNames);

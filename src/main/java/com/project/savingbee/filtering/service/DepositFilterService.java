@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DepositFilterService extends BaseFilterService<DepositProducts,DepositFilterRequest>{
+public class DepositFilterService extends BaseFilterService<DepositProducts, DepositFilterRequest> {
 
   private final DepositProductsRepository depositProductsRepository;
 
@@ -107,7 +107,6 @@ public class DepositFilterService extends BaseFilterService<DepositProducts,Depo
   /**
    * 상품명 정렬 처리
    */
-  // TODO: 디버그를 위한 주석 처리
   private Page<ProductSummaryResponse> filterWithBasicSort(DepositFilterRequest request) {
     log.debug("상품명 정렬 처리 시작");
 
@@ -178,6 +177,7 @@ public class DepositFilterService extends BaseFilterService<DepositProducts,Depo
    */
   private List<DepositProducts> sortByInterestRate(List<DepositProducts> products,
       DepositFilterRequest request) {
+    // 최고 금리 정렬
     String sortField = request.hasSort() ? request.getSort().getField() : "intr_rate2";
     boolean isDescending = request.hasSort() ? request.getSort().isDescending() : true;
 
