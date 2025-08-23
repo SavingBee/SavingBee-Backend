@@ -4,8 +4,7 @@ import java.util.*;
 import lombok.*;
 
 /**
- * 예금 필터링 검색 요청
- * - 프론트엔드에서 파라미터로 받은 조건을 정리하여 FilterService에서 사용할 수 있게함
+ * 예금 필터링 검색 요청 - 프론트엔드에서 파라미터로 받은 조건을 정리하여 FilterService에서 사용할 수 있게함
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

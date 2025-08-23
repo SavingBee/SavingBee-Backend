@@ -44,9 +44,7 @@ public class SavingFilterController {
       @RequestParam(required = false) BigDecimal intrRate2Max,
       @RequestParam(required = false) String sortField,
       @RequestParam(required = false) String sortOrder,
-      @RequestParam(defaultValue = "1") Integer page)
-
-  {
+      @RequestParam(defaultValue = "1") Integer page) {
     // 고정 페이지 크기
     final int PAGE_SIZE = 10;
 
@@ -66,10 +64,10 @@ public class SavingFilterController {
           result.getTotalElements(), result.getNumberOfElements());
 
       return ResponseEntity.ok(result);
-    } catch (IllegalArgumentException e){
+    } catch (IllegalArgumentException e) {
       log.error("잘못된 요청 파라미터: {}", e.getMessage());
       return ResponseEntity.badRequest().build();
-    }catch (Exception e) {
+    } catch (Exception e) {
       log.error("적금 필터링 중 오류 발생", e);
       return ResponseEntity.internalServerError().build();
     }
@@ -78,10 +76,12 @@ public class SavingFilterController {
   /**
    * 파라미터를 SavingFilterRequest 객체로 변환
    */
-  private SavingFilterRequest buildSavingFilterRequest(String finCoType, String joinWay, String joinDeny, String saveTrm,
+  private SavingFilterRequest buildSavingFilterRequest(String finCoType, String joinWay,
+      String joinDeny, String saveTrm,
       String intrRateType, String rsrvType, Integer monthlyMaxLimit, Integer totalMaxLimit,
-      BigDecimal intrRateMin, BigDecimal intrRateMax, BigDecimal intrRate2Min, BigDecimal intrRate2Max,
-      String sortField, String sortOrder, Integer page, Integer size){
+      BigDecimal intrRateMin, BigDecimal intrRateMax, BigDecimal intrRate2Min,
+      BigDecimal intrRate2Max,
+      String sortField, String sortOrder, Integer page, Integer size) {
     // 필터 객체 생성
     SavingFilterRequest.Filters.FiltersBuilder filtersBuilder = SavingFilterRequest.Filters.builder();
 
@@ -140,7 +140,6 @@ public class SavingFilterController {
 
     // 우대 금리 범위
     filtersBuilder.intrRate2(FilterParsingUtil.buildRangeFilter(intrRate2Min, intrRate2Max));
-
 
     SavingFilterRequest.Filters filters = filtersBuilder.build();
 

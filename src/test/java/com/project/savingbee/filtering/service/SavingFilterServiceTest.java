@@ -34,6 +34,7 @@ import java.util.List;
 @ActiveProfiles("test")
 @DisplayName("적금 필터 서비스 통합 테스트")
 public class SavingFilterServiceTest {
+
   @MockitoBean
   private ClientRegistrationRepository clientRegistrationRepository;
 
@@ -549,7 +550,8 @@ public class SavingFilterServiceTest {
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
 
-    assertThat(productCodes).containsExactly("SAVING_HIGH_001", "SAVING_MEDIUM_001", "SAVING_FREE_001");
+    assertThat(productCodes).containsExactly("SAVING_HIGH_001", "SAVING_MEDIUM_001",
+        "SAVING_FREE_001");
 
     List<BigDecimal> maxRates = result.getContent().stream()
         .map(ProductSummaryResponse::getMaxIntrRate)
@@ -588,7 +590,8 @@ public class SavingFilterServiceTest {
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
 
-    assertThat(productCodes).containsExactly("SAVING_FREE_001", "SAVING_MEDIUM_001", "SAVING_HIGH_001");
+    assertThat(productCodes).containsExactly("SAVING_FREE_001", "SAVING_MEDIUM_001",
+        "SAVING_HIGH_001");
   }
 
   @Test

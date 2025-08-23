@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SavingFilterService extends BaseFilterService<SavingsProducts, SavingFilterRequest>{
+public class SavingFilterService extends BaseFilterService<SavingsProducts, SavingFilterRequest> {
 
   private final SavingsProductsRepository savingsProductsRepository;
 
@@ -32,14 +32,14 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
    * 가입대상 - 제한 없음, 서민전용, 일부 제한
    * 저축기간 - 6개월, 12개월, 24개월, 36개월
    * 이자계산 방식 - 단리, 복리
-   * 적립방식 - 정액적립식, 자유적립식, 전체
+   * 적립방식 - 정액적립식, 자유적립식,전체
    * 월 저축금
    * 총 저축금
-   * 기본 금리 - 최저값, 최고값
-   * 최고 금리 - 최저값, 최고값
+   * 기본 금리 - 최저값, 최고값 최고
+   * 금리 - 최저값, 최고값
    */
 
-  public Page<ProductSummaryResponse> savingFilter(SavingFilterRequest request){
+  public Page<ProductSummaryResponse> savingFilter(SavingFilterRequest request) {
     log.info("적금 필터링 시작 - 조건:{}", request);
 
     // 기본값 설정
@@ -63,7 +63,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 서비스에서 금리 정렬 처리
    */
-  private Page<ProductSummaryResponse> filterWithRateSort (SavingFilterRequest request){
+  private Page<ProductSummaryResponse> filterWithRateSort(SavingFilterRequest request) {
     // 필터링 조건만 적용하여 모든 데이터 조회
     Specification<SavingsProducts> spec = buildFilterSpecification(request);
     List<SavingsProducts> allProducts = savingsProductsRepository.findAll(spec);
@@ -95,7 +95,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 상품명 정렬 처리
    */
-  private Page<ProductSummaryResponse> filterWithBasicSort(SavingFilterRequest request){
+  private Page<ProductSummaryResponse> filterWithBasicSort(SavingFilterRequest request) {
     // 페이징 조건 생성
     Specification<SavingsProducts> spec = buildFilterSpecification(request);
     // 페이징 및 정렬 설정
@@ -115,7 +115,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 필터링 조건만 생성
    */
-  private Specification<SavingsProducts> buildFilterSpecification(SavingFilterRequest request){
+  private Specification<SavingsProducts> buildFilterSpecification(SavingFilterRequest request) {
     Specification<SavingsProducts> spec = isActiveProduct();
 
     // 필터가 없으면 JOIN없이 기본 조건만 반환
@@ -155,7 +155,8 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 서비스 레벨에서 금리 기준 정렬
    */
-  private List<SavingsProducts> sortByInterestRate(List<SavingsProducts> products, SavingFilterRequest request){
+  private List<SavingsProducts> sortByInterestRate(List<SavingsProducts> products,
+      SavingFilterRequest request) {
     // 최고 금리 정렬
     String sortField = request.hasSort() ? request.getSort().getField() : "intr_rate2";
     boolean isDescending = request.hasSort() ? request.getSort().isDescending() : true;
@@ -224,7 +225,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 금융회사 번호 필터
    */
-  private Specification<SavingsProducts> filterFinCoNum(List<String> finCoNumbers){
+  private Specification<SavingsProducts> filterFinCoNum(List<String> finCoNumbers) {
     return (root, query, cb) -> root.get("finCoNo").in(finCoNumbers);
   }
 
@@ -238,7 +239,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 금리 관련 필터가 있는지 확인
    */
-  private boolean hasInterestRateFilters(SavingFilterRequest.Filters filters){
+  private boolean hasInterestRateFilters(SavingFilterRequest.Filters filters) {
     return (filters.getSaveTrm() != null && !filters.getSaveTrm().isEmpty()) ||
         (filters.getIntrRateType() != null && !filters.getIntrRateType().isEmpty()) ||
         (filters.getRsrvType() != null && !filters.getRsrvType().isEmpty()) ||
@@ -355,7 +356,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   }
 
   // 우대조건 필터
-  private Specification<SavingsProducts> hasPreferentialConditions(List<String> joinWayConditions){
+  private Specification<SavingsProducts> hasPreferentialConditions(List<String> joinWayConditions) {
     return (root, query, cb) -> {
       List<Predicate> conditionPredicates = new ArrayList<>();
 
@@ -393,7 +394,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * Entity를 Response DTO로 변환
    */
-  private ProductSummaryResponse toProductSummaryResponse(SavingsProducts product){
+  private ProductSummaryResponse toProductSummaryResponse(SavingsProducts product) {
     try {
       // 최고 금리와 기본 금리 계산 (여러 금리 옵션 중 최대값)
       BigDecimal maxIntrRate = BigDecimal.ZERO;
