@@ -84,9 +84,11 @@ public class SearchService {
 
       return ResponseEntity.ok(
           ProductSearchResponse.builder()
-              .products(searchResults)
-              .totalCount(searchResults.size())
+              .products(new ArrayList<>())
+              .popularProducts(popularProducts) // 추가
+              .totalCount(0)
               .searchTerm(processedName)
+              .message("검색 결과가 없어 인기 상품을 추천합니다") // 추가
               .build()
       );
 
@@ -94,7 +96,7 @@ public class SearchService {
       // 검색 실패 - 실패(400)
       return ResponseEntity.badRequest().body(
           ProductSearchResponse.builder()
-              .message("검색어는 2자 이상 입력해주세요")
+              .message("검색 중 오류가 발생했습니다: " + e.getMessage())
               .build()
       );
     }
