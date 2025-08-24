@@ -14,6 +14,7 @@ import com.project.savingbee.productCompare.dto.ProductInfoDto;
 import com.project.savingbee.productCompare.util.CalcEngine;
 import com.project.savingbee.productCompare.util.CalcEngine.CalcResult;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -91,8 +92,8 @@ public class ProductCompareService {
 
   // 상품 비교
   public CompareResponseDto compareProducts(CompareExecuteRequestDto requestDto) {
-    List<ProductCompareInfosDto> products = requestDto.getType().equals("D") ?
-        compareDeposit(requestDto) : compareSavings(requestDto);
+    List<ProductCompareInfosDto> products = new ArrayList<>(
+        requestDto.getType().equals("D") ? compareDeposit(requestDto) : compareSavings(requestDto));
 
     // 입력 순서 유지 정렬(먼저 선택한 상품을 왼쪽에)
     List<String> ids = requestDto.getProductIds();
