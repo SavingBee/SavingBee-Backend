@@ -63,5 +63,11 @@ public interface SavingsInterestRatesRepository extends JpaRepository<SavingsInt
 
   // 알람 후보 수집용(금리 옵션 테이블에서 since 이후 변경된 상품 코드 목록)
   @Query("select distinct r.finPrdtCd from SavingsInterestRates r where r.updatedAt > :since")
-  List<String> findDistinctFinPrdtCdUpdatedAfter(@Param("since") LocalDateTime since); 
+  List<String> findDistinctFinPrdtCdUpdatedAfter(@Param("since") LocalDateTime since);
+
+  // 예치 기간이 일치한 금리 정보 조회(상품코드 순)
+  List<SavingsInterestRates> findAllBySaveTrmOrderByFinPrdtCd(Integer saveTrm);
+
+  // 상품코드 + 예치 기간으로 두 상품 정보 조회(상품 비교용)
+  List<SavingsInterestRates> findAllByFinPrdtCdInAndSaveTrm(List<String> ids, Integer saveTrm);
 }
