@@ -74,7 +74,12 @@ public class UserEntity {
   private List<ProductAlertSetting> productAlertSettings; // 상품 알림 설정들
 
   public void updateUser(UserRequestDTO dto) {
-    this.email = dto.getEmail();
-    this.nickname = dto.getNickname();
+    // null이 아니고 비어있지 않은 경우에만 업데이트 (선택적 수정 가능)
+    if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+      this.email = dto.getEmail();
+    }
+    if (dto.getNickname() != null && !dto.getNickname().trim().isEmpty()) {
+      this.nickname = dto.getNickname();
+    }
   }
 }
