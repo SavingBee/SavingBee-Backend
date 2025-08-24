@@ -225,8 +225,12 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 금융회사 번호 필터
    */
-  private Specification<SavingsProducts> filterFinCoNum(List<String> finCoNumbers) {
-    return (root, query, cb) -> root.get("finCoNo").in(finCoNumbers);
+  private Specification<SavingsProducts> filterFinCoNum(List<String> orgTypeCodes){
+    return (root, query, cb) -> {
+      // 금융회사 테이블과 조인
+      var financialCompanyJoin = root.join("financialCompany", JoinType.INNER);
+      return financialCompanyJoin.get("orgTypeCode").in(orgTypeCodes);
+    };
   }
 
   /**
