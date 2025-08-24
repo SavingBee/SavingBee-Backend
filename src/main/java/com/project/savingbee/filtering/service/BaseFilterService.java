@@ -23,9 +23,10 @@ public abstract class BaseFilterService<T, R extends BaseFilterRequest> {
    */
 
   // 금리 정렬 여부 확인
-  protected boolean isInterestRateSort(R request) { if (!request.hasSort()) {
-    return true; // 기본값이 금리 정렬
-  }
+  protected boolean isInterestRateSort(R request) {
+    if (!request.hasSort()) {
+      return true; // 기본값이 금리 정렬
+    }
 
     String sortField = request.getSort().getField();
     return "intr_rate2".equals(sortField) ||

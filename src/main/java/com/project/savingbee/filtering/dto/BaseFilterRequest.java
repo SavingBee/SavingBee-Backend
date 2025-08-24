@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public abstract class BaseFilterRequest {
+
   private SortFilter sort;
   private Integer page;
   private Integer size;
