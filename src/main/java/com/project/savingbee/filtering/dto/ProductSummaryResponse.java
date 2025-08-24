@@ -22,7 +22,7 @@ public class ProductSummaryResponse {
   @JsonProperty("kor_co_nm")
   private String korCoNm;
 
-  // 상품 타입 (deposit: 예금, savings: 적금)
+  // 상품 타입 (deposit: 예금, saving: 적금)
   @JsonProperty("product_type")
   private String productType;
 
