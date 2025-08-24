@@ -131,7 +131,6 @@ public class SearchServiceTest {
         .interestRates(Collections.emptyList())
         .build();
 
-
     // 금리 정보는 별도로 저장하지 않고 빈 리스트로 처리
   }
 
@@ -162,7 +161,8 @@ public class SearchServiceTest {
 
     // 테스트 코드 수정 필요
     @SuppressWarnings("unchecked")
-    List<ProductSummaryResponse> products = (List<ProductSummaryResponse>) responseBody.get("products");
+    List<ProductSummaryResponse> products = (List<ProductSummaryResponse>) responseBody.get(
+        "products");
 
     // 예금 상품 확인
     boolean hasDeposit = products.stream()
@@ -208,17 +208,20 @@ public class SearchServiceTest {
     assertThat(responseBody.get("message")).isEqualTo("검색 결과가 없어 인기 상품을 추천합니다");
 
     @SuppressWarnings("unchecked")
-    List<ProductSummaryResponse> products = (List<ProductSummaryResponse>) responseBody.get("products");
+    List<ProductSummaryResponse> products = (List<ProductSummaryResponse>) responseBody.get(
+        "products");
     assertThat(products).isEmpty();
 
     // 디버그 로그 추가
     log.info("Response body keys: {}", responseBody.keySet());
     Object popularProductsObj = responseBody.get("popularProducts");
     log.info("PopularProducts object: {}", popularProductsObj);
-    log.info("PopularProducts class: {}", popularProductsObj != null ? popularProductsObj.getClass() : "null");
+    log.info("PopularProducts class: {}",
+        popularProductsObj != null ? popularProductsObj.getClass() : "null");
 
     @SuppressWarnings("unchecked")
-    List<ProductSummaryResponse> popularProducts = (List<ProductSummaryResponse>) responseBody.get("popularProducts");
+    List<ProductSummaryResponse> popularProducts = (List<ProductSummaryResponse>) responseBody.get(
+        "popularProducts");
 
     // null 체크 추가
     if (popularProducts == null) {

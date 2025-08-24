@@ -6,8 +6,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class FilterParsingUtil {
+
   // 문자열을 List<String>으로 변환
-  public static List<String> parseStringList(String value){
+  public static List<String> parseStringList(String value) {
     if (value == null || value.trim().isEmpty()) {
       return null;
     }
@@ -18,7 +19,7 @@ public class FilterParsingUtil {
   }
 
   // List<Integer>로 변환
-  public static List<Integer> parseIntegerList(String value){
+  public static List<Integer> parseIntegerList(String value) {
     if (value == null || value.trim().isEmpty()) {
       return null;
     }
@@ -32,6 +33,7 @@ public class FilterParsingUtil {
       throw new IllegalArgumentException("저축기간은 숫자만 입력 가능합니다: " + value);
     }
   }
+
   public static RangeFilter buildRangeFilter(BigDecimal min, BigDecimal max) {
     if (min == null && max == null) {
       return null;

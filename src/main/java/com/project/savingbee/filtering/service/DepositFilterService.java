@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DepositFilterService extends BaseFilterService<DepositProducts,DepositFilterRequest>{
+public class DepositFilterService extends BaseFilterService<DepositProducts, DepositFilterRequest> {
 
   private final DepositProductsRepository depositProductsRepository;
 
@@ -38,10 +38,7 @@ public class DepositFilterService extends BaseFilterService<DepositProducts,Depo
    * 우대조건 - 비대면 가입, 재예치, 첫 거래, 연령, 실적
    * 가입대상 - 제한없음, 서민전용, 일부 제한
    * 저축기간 - 6개월, 12개월, 24개월, 36개월
-   * 이자계산 방식 - 단리, 복리
-   * 저축금
-   * 기본 금리 - 최저값 ~ 최고값 범위
-   * 최고 금리 - 최저값 ~ 최고값 범위
+   * 이자계산 방식 - 단리, 복리 저축금 기본 금리 - 최저값 ~ 최고값 범위 최고 금리 - 최저값 ~ 최고값 범위
    */
   public Page<ProductSummaryResponse> depositFilter(DepositFilterRequest request) {
     log.info("예금 필터링 시작 - 조건: {}", request);
@@ -107,7 +104,6 @@ public class DepositFilterService extends BaseFilterService<DepositProducts,Depo
   /**
    * 상품명 정렬 처리
    */
-  // TODO: 디버그를 위한 주석 처리
   private Page<ProductSummaryResponse> filterWithBasicSort(DepositFilterRequest request) {
     log.debug("상품명 정렬 처리 시작");
 
@@ -178,6 +174,7 @@ public class DepositFilterService extends BaseFilterService<DepositProducts,Depo
    */
   private List<DepositProducts> sortByInterestRate(List<DepositProducts> products,
       DepositFilterRequest request) {
+    // 최고 금리 정렬
     String sortField = request.hasSort() ? request.getSort().getField() : "intr_rate2";
     boolean isDescending = request.hasSort() ? request.getSort().isDescending() : true;
 
