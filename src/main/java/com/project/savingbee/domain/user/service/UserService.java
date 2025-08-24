@@ -169,6 +169,14 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
             throw new AccessDeniedException("본인 계정만 수정 가능");
         }
 
+        // 이메일과 닉네임 중 최소 하나는 제공되어야 함
+        boolean hasEmail = dto.getEmail() != null && !dto.getEmail().trim().isEmpty();
+        boolean hasNickname = dto.getNickname() != null && !dto.getNickname().trim().isEmpty();
+        
+        if (!hasEmail && !hasNickname) {
+            throw new IllegalArgumentException("이메일 또는 닉네임 중 최소 하나는 입력해야 합니다.");
+        }
+
         // 조회
         UserEntity entity = userRepository.findByUsernameAndIsLockAndIsSocial(dto.getUsername(), false, false)
                 .orElseThrow(() -> new UsernameNotFoundException(dto.getUsername()));
@@ -177,8 +185,39 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         entity.updateUser(dto);
 
         return userRepository.save(entity).getId();
+    }
 
+    // 현재 비밀번호 확인 후 새 비밀번호로 변경
+    @Transactional
+    public void changePassword(UserRequestDTO dto) throws AccessDeniedException {
+        // 본인만 변경 가능 검증
+        String sessionUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!sessionUsername.equals(dto.getUsername())) {
+            throw new AccessDeniedException("본인 계정만 수정 가능");
+        }
 
+        // 자체 로그인 사용자만 비밀번호 변경 가능
+        UserEntity entity = userRepository.findByUsernameAndIsLockAndIsSocial(dto.getUsername(), false, false)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+
+        // 현재 비밀번호 확인
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), entity.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 새 비밀번호와 확인 비밀번호 일치 검증
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
+            throw new IllegalArgumentException("새 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 현재 비밀번호와 새 비밀번호가 같은지 확인
+        if (passwordEncoder.matches(dto.getPassword(), entity.getPassword())) {
+            throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+        }
+
+        // 비밀번호 업데이트
+        entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+        userRepository.save(entity);
     }
     // 자체/소셜 로그인 회원 탈퇴
     @Transactional
