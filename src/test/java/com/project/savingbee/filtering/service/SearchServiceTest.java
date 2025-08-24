@@ -25,13 +25,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 @Slf4j
 public class SearchServiceTest {
+
+  @MockitoBean
+  private ClientRegistrationRepository clientRegistrationRepository;
 
   @Autowired
   private SearchService searchService;
@@ -81,6 +86,7 @@ public class SearchServiceTest {
         .finCoNo("TEST001")
         .minAmount(new BigDecimal("10000"))
         .maxAmount(new BigDecimal("100000000"))
+        .financialCompany(testBank)
         .build();
     depositProductsRepository.save(testDeposit);
 
@@ -101,6 +107,7 @@ public class SearchServiceTest {
         .createdAt(LocalDateTime.now())
         .updatedAt(LocalDateTime.now())
         .finCoNo("TEST001")
+        .financialCompany(testBank)
         .build();
     savingsProductsRepository.save(testSavings);
   }
@@ -129,6 +136,12 @@ public class SearchServiceTest {
 
     ProductSearchResponse responseBody = response.getBody();
     List<ProductSummaryResponse> products = responseBody.getProducts();
+
+    log.info("실제 반환된 products 개수: {}", products.size());
+    products.forEach(p -> {
+      log.info("Product: type={}, name={}, company={}",
+          p.getProductType(), p.getFinPrdtNm(), p.getKorCoNm());
+    });
 
     assertThat(products).hasSize(2);
     assertThat(responseBody.getTotalCount()).isEqualTo(2);

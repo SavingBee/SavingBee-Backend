@@ -243,7 +243,7 @@ public class SearchService {
           .finPrdtCd(savings.getFinPrdtCd())
           .finPrdtNm(savings.getFinPrdtNm() != null ? savings.getFinPrdtNm() : "상품명 정보없음")
           .korCoNm(companyName)
-          .productType("savings")
+          .productType("saving")
           .maxIntrRate(maxRate)
           .baseIntrRate(baseRate)
           .build();
