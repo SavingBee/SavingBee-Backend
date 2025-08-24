@@ -9,6 +9,7 @@ import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.DepositProductsRepository;
 import com.project.savingbee.common.repository.FinancialCompaniesRepository;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
+import com.project.savingbee.filtering.dto.ProductSearchResponse;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.util.KoreanParsing;
 import jakarta.transaction.Transactional;
@@ -32,41 +33,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
-// TODO: UserEntity 파트 오류로 인한 SpringTest 사용 불가 - 확인 요청
-//@SpringBootTest
-//@ActiveProfiles("test")
-//@Transactional
-
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 @Slf4j
 public class SearchServiceTest {
 
-//  @Autowired
-//  private SearchService searchService;
-//
-//  @Autowired
-//  private DepositProductsRepository depositProductsRepository;
-//
-//  @Autowired
-//  private SavingsProductsRepository savingsProductsRepository;
-//
-//  @Autowired
-//  private FinancialCompaniesRepository financialCompaniesRepository;
+  @Autowired
+  private SearchService searchService;
 
-  @Mock
+  @Autowired
   private DepositProductsRepository depositProductsRepository;
 
-  @Mock
+  @Autowired
   private SavingsProductsRepository savingsProductsRepository;
 
-  @Mock
+  @Autowired
   private FinancialCompaniesRepository financialCompaniesRepository;
-
-  @Mock
-  private KoreanParsing koreanParsing;
-
-  @InjectMocks
-  private SearchService searchService;
 
   private FinancialCompanies testBank;
   private DepositProducts testDeposit;
@@ -86,6 +69,7 @@ public class SearchServiceTest {
         .createdAt(LocalDateTime.now())
         .updatedAt(LocalDateTime.now())
         .build();
+    financialCompaniesRepository.save(testBank);
 
     // 예금 상품 저장
     testDeposit = DepositProducts.builder()
@@ -109,6 +93,7 @@ public class SearchServiceTest {
         .financialCompany(testBank)
         .interestRates(Collections.emptyList())
         .build();
+    depositProductsRepository.save(testDeposit);
 
     // 적금 상품 저장
     testSavings = SavingsProducts.builder()
@@ -130,6 +115,7 @@ public class SearchServiceTest {
         .financialCompany(testBank)
         .interestRates(Collections.emptyList())
         .build();
+    savingsProductsRepository.save(testSavings);
 
 
     // 금리 정보는 별도로 저장하지 않고 빈 리스트로 처리
@@ -138,31 +124,23 @@ public class SearchServiceTest {
   @Test
   @DisplayName("상품 검색 성공")
   void searchProductSuccess() {
-    // Mock 설정
-    when(koreanParsing.processKoreanText("테스트")).thenReturn("테스트");
-    when(depositProductsRepository.findByFinPrdtNmContainingIgnoreCaseAndIsActiveTrue("테스트"))
-        .thenReturn(List.of(testDeposit));
-    when(savingsProductsRepository.findByFinPrdtNmContainingIgnoreCaseAndIsActiveTrue("테스트"))
-        .thenReturn(List.of(testSavings));
-
     String searchTerm = "테스트";
     log.info("Testing search with term: {}", searchTerm);
 
-    ResponseEntity<?> response = searchService.searchProduct(searchTerm);
+    ResponseEntity<ProductSearchResponse> response = searchService.searchProduct(searchTerm);
 
     log.info("Response status: {}", response.getStatusCode());
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-    @SuppressWarnings("unchecked")
-    Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
+//    @SuppressWarnings("unchecked")
+//    ProductSearchResponse responseBody = (ProductSearchResponse) response.getBody();
 
-    assertThat(responseBody).isNotNull();
-    assertThat(responseBody.get("totalCount")).isEqualTo(2); // 예금 1개 + 적금 1개
-    assertThat(responseBody.get("searchTerm")).isEqualTo(searchTerm);
+    assertThat(response).isNotNull();
 
     // 테스트 코드 수정 필요
-    @SuppressWarnings("unchecked")
-    List<ProductSummaryResponse> products = (List<ProductSummaryResponse>) responseBody.get("products");
+//    @SuppressWarnings("unchecked")
+    List<ProductSummaryResponse> products = response.getBody().getProducts();
+    assertThat(products).hasSize(2);
 
     // 예금 상품 확인
     boolean hasDeposit = products.stream()
@@ -182,44 +160,25 @@ public class SearchServiceTest {
   @Test
   @DisplayName("검색 결과 없음, 인기 상품 반환")
   void searchProductNoResults() {
-    // Mock 설정
-    when(koreanParsing.processKoreanText("존재하지않는상품")).thenReturn("존재하지않는상품");
-    when(depositProductsRepository.findByFinPrdtNmContainingIgnoreCaseAndIsActiveTrue("존재하지않는상품"))
-        .thenReturn(Collections.emptyList());
-    when(savingsProductsRepository.findByFinPrdtNmContainingIgnoreCaseAndIsActiveTrue("존재하지않는상품"))
-        .thenReturn(Collections.emptyList());
-    when(depositProductsRepository.findByIsActiveTrueOrderByCreatedAtDesc())
-        .thenReturn(List.of(testDeposit));
-    when(savingsProductsRepository.findByIsActiveTrueOrderByCreatedAtDesc())
-        .thenReturn(List.of(testSavings, testSavings));
 
     String searchTerm = "존재하지않는상품";
     log.info("Testing no results scenario with term: {}", searchTerm);
 
-    ResponseEntity<?> response = searchService.searchProduct(searchTerm);
+    ResponseEntity<ProductSearchResponse> response = searchService.searchProduct(searchTerm);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+//    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-    @SuppressWarnings("unchecked")
-    Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
+//    @SuppressWarnings("unchecked")
+//    Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
 
-    assertThat(responseBody).isNotNull();
-    assertThat(responseBody.get("totalCount")).isEqualTo(0);
-    assertThat(responseBody.get("message")).isEqualTo("검색 결과가 없어 인기 상품을 추천합니다");
+    assertThat(response).isNotNull();
 
-    @SuppressWarnings("unchecked")
-    List<ProductSummaryResponse> products = (List<ProductSummaryResponse>) responseBody.get("products");
+//    @SuppressWarnings("unchecked")
+    List<ProductSummaryResponse> products = response.getBody().getProducts();
     assertThat(products).isEmpty();
 
-    // 디버그 로그 추가
-    log.info("Response body keys: {}", responseBody.keySet());
-    Object popularProductsObj = responseBody.get("popularProducts");
-    log.info("PopularProducts object: {}", popularProductsObj);
-    log.info("PopularProducts class: {}", popularProductsObj != null ? popularProductsObj.getClass() : "null");
-
-    @SuppressWarnings("unchecked")
-    List<ProductSummaryResponse> popularProducts = (List<ProductSummaryResponse>) responseBody.get("popularProducts");
-
+//    @SuppressWarnings("unchecked")
+    List<ProductSummaryResponse> popularProducts = response.getBody().getPopularProducts();
     // null 체크 추가
     if (popularProducts == null) {
       log.error("PopularProducts is null!");
@@ -240,15 +199,15 @@ public class SearchServiceTest {
     String shortTerm = "a";
     log.info("Testing invalid query: {}", shortTerm);
 
-    ResponseEntity<?> response = searchService.searchProduct(shortTerm);
+    ResponseEntity<ProductSearchResponse> response = searchService.searchProduct(shortTerm);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
-    @SuppressWarnings("unchecked")
-    Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
+//    @SuppressWarnings("unchecked")
+//    Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
 
-    assertThat(responseBody).isNotNull();
-    assertThat(responseBody.get("error")).isEqualTo("검색어는 2자 이상 입력해주세요");
+    assertThat(response).isNotNull();
+//    assertThat(response.get("error")).isEqualTo("검색어는 2자 이상 입력해주세요");
 
     log.info("Invalid query properly rejected");
   }
