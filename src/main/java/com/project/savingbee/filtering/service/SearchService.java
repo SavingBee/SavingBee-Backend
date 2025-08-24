@@ -8,12 +8,14 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 /**
  * 금융 상품 이름으로 상품 검색
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SearchService {
@@ -24,6 +26,16 @@ public class SearchService {
 
   // 인기 상품 캐시 (사용자들이 확인했던 상품)
   private final Set<String> viewedProductsCache = new HashSet<>();
+
+  /**
+   * 상품 조회수 증가 - 상세 조회(DetailService) 시 호출
+   */
+  public void addToViewedProductsCache(String productCode) {
+    if (productCode != null && !productCode.trim().isEmpty()) {
+      viewedProductsCache.add(productCode);
+      log.debug("상품이 인기 상품 캐시에 추가되었습니다: {}", productCode);
+    }
+  }
 
   /**
    * 상품 검색
