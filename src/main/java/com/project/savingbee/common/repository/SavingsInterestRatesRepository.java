@@ -1,6 +1,7 @@
 package com.project.savingbee.common.repository;
 
 import com.project.savingbee.common.entity.SavingsInterestRates;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
@@ -64,7 +65,15 @@ public interface SavingsInterestRatesRepository extends JpaRepository<SavingsInt
   // 알람 후보 수집용(금리 옵션 테이블에서 since 이후 변경된 상품 코드 목록)
   @Query("select distinct r.finPrdtCd from SavingsInterestRates r where r.updatedAt > :since")
   List<String> findDistinctFinPrdtCdUpdatedAfter(@Param("since") LocalDateTime since);
-
+  
+  // 특정 상품의 최고 금리 조회 (추천 시스템용)
+  @Query("SELECT MAX(COALESCE(s.intrRate2, s.intrRate)) FROM SavingsInterestRates s WHERE s.finPrdtCd = :productCode")
+  Optional<BigDecimal> findMaxInterestRateByProductCode(@Param("productCode") String productCode);
+  
+  // 특정 조건의 상품들 중 최고 금리 상품들 조회
+  @Query("SELECT s FROM SavingsInterestRates s WHERE s.finPrdtCd IN :productCodes ORDER BY COALESCE(s.intrRate2, s.intrRate) DESC")
+  List<SavingsInterestRates> findTopRatesByProductCodes(@Param("productCodes") List<String> productCodes);
+  
   // 예치 기간이 일치한 금리 정보 조회(상품코드 순)
   List<SavingsInterestRates> findAllBySaveTrmOrderByFinPrdtCd(Integer saveTrm);
 

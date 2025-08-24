@@ -82,6 +82,16 @@ public class UserController {
         return ResponseEntity.status(200).body(userService.updateUser(dto));
     }
 
+    // 비밀번호 변경 (현재 비밀번호 확인 후)
+    @PutMapping(value = "/user/password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> changePasswordApi(
+            @Validated(UserRequestDTO.changePasswordGroup.class) @RequestBody UserRequestDTO dto
+    ) throws AccessDeniedException {
+        userService.changePassword(dto);
+        Map<String, String> responseBody = Collections.singletonMap("message", "비밀번호가 성공적으로 변경되었습니다.");
+        return ResponseEntity.ok(responseBody);
+    }
+
     // 유저 제거 (자체/소셜)
     @DeleteMapping(value = "/user", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Boolean> deleteUserApi(
