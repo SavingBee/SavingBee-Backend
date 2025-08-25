@@ -323,6 +323,15 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         return new UserResponseDTO(username, entity.getIsSocial(), entity.getNickname(), entity.getEmail());
     }
 
+    // 특정 사용자 정보 조회 (username으로)
+    @Transactional(readOnly = true)
+    public UserResponseDTO getUserInfo(String username) {
+        UserEntity entity = userRepository.findByUsernameAndIsLock(username, false)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 유저를 찾을 수 없습니다: " + username));
+
+        return new UserResponseDTO(username, entity.getIsSocial(), entity.getNickname(), entity.getEmail());
+    }
+
     // 아이디 찾기 (이메일로)
     @Transactional
     public void findUsername(UserRequestDTO dto) {

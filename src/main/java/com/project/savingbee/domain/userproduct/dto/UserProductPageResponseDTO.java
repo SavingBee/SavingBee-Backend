@@ -10,7 +10,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-class UserProductPageResponseDTO {
+public class UserProductPageResponseDTO {
     private List<UserProductResponseDTO> content;
     private int page;
     private int size;

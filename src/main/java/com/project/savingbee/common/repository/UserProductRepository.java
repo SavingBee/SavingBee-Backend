@@ -1,6 +1,8 @@
 package com.project.savingbee.common.repository;
 
 import com.project.savingbee.common.entity.UserProduct;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +20,9 @@ public interface UserProductRepository extends JpaRepository<UserProduct, Long> 
 
     // 사용자별 보유 상품 목록 조회
     List<UserProduct> findByUserIdAndIsActiveTrue(Long userId);
+    
+    // 사용자별 보유 상품 목록 조회 (페이징)
+    Page<UserProduct> findByUserIdAndIsActiveTrue(Long userId, Pageable pageable);
     
     // 사용자별 전체 보유 상품 목록 (비활성 포함)
     List<UserProduct> findByUserId(Long userId);

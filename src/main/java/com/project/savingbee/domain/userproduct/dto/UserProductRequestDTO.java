@@ -21,6 +21,9 @@ public class UserProductRequestDTO {
     public interface UpdateGroup {}
     public interface DeleteGroup {}
     
+    // 사용자명 (인증 정보에서 자동 설정)
+    private String username;
+    
     @NotBlank(groups = {CreateGroup.class, UpdateGroup.class})
     @Size(max = 100)
     private String bankName; // 은행명
