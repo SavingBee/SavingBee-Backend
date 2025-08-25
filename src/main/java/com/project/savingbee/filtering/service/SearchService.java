@@ -154,65 +154,108 @@ public class SearchService {
     return popularProducts.stream().limit(3).collect(Collectors.toList());
   }
 
-  // 예금 상품을 응답 DTO로 변환
+  // 예금 상품 정보 DTO로 반환
   private ProductSummaryResponse convertDepositToResponse(DepositProducts deposit) {
-    // 금융회사명 안전하게 가져오기
-    String companyName = "정보없음";
-    if (deposit.getFinancialCompany() != null
-        && deposit.getFinancialCompany().getKorCoNm() != null) {
-      companyName = deposit.getFinancialCompany().getKorCoNm();
+    try {
+      // 금융회사명 가져오기
+      String companyName = "정보없음";
+      if (deposit.getFinancialCompany() != null && deposit.getFinancialCompany().getKorCoNm() != null) {
+        companyName = deposit.getFinancialCompany().getKorCoNm();
+      }
+
+      // 최고 우대 금리 계산
+      BigDecimal maxRate = BigDecimal.ZERO;
+      if (deposit.getInterestRates() != null && !deposit.getInterestRates().isEmpty()) {
+        maxRate = deposit.getInterestRates().stream()
+            .filter(rate -> rate.getIntrRate2() != null)
+            .map(rate -> rate.getIntrRate2())
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+      }
+
+      // 기본 금리 계산
+      BigDecimal baseRate = BigDecimal.ZERO;
+      if (deposit.getInterestRates() != null && !deposit.getInterestRates().isEmpty()) {
+        baseRate = deposit.getInterestRates().stream()
+            .filter(rate -> rate.getIntrRate() != null)
+            .map(rate -> rate.getIntrRate())
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+      }
+
+      return ProductSummaryResponse.builder()
+          .finPrdtCd(deposit.getFinPrdtCd())
+          .finPrdtNm(deposit.getFinPrdtNm() != null ? deposit.getFinPrdtNm() : "상품명 정보없음")
+          .korCoNm(companyName)
+          .productType("deposit")
+          .maxIntrRate(maxRate)
+          .baseIntrRate(baseRate)
+          .build();
+
+    } catch (Exception e) {
+      log.error("예금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}", deposit.getFinPrdtCd(), e.getMessage());
+
+      return ProductSummaryResponse.builder()
+          .finPrdtCd(deposit.getFinPrdtCd())
+          .finPrdtNm(deposit.getFinPrdtNm() != null ? deposit.getFinPrdtNm() : "상품명 정보없음")
+          .korCoNm("정보없음")
+          .productType("deposit")
+          .maxIntrRate(BigDecimal.ZERO)
+          .baseIntrRate(BigDecimal.ZERO)
+          .build();
     }
-
-    // 최고 우대 금리 계산
-    BigDecimal maxRate = deposit.getInterestRates().stream()
-        .map(rate -> rate.getIntrRate2())
-        .max(BigDecimal::compareTo)
-        .orElse(BigDecimal.ZERO);
-
-    // 기본 금리 계산
-    BigDecimal baseRate = deposit.getInterestRates().stream()
-        .map(rate -> rate.getIntrRate())
-        .max(BigDecimal::compareTo)
-        .orElse(BigDecimal.ZERO);
-
-    return ProductSummaryResponse.builder()
-        .finPrdtCd(deposit.getFinPrdtCd())
-        .finPrdtNm(deposit.getFinPrdtNm())
-        .korCoNm(deposit.getFinancialCompany().getKorCoNm())
-        .productType("deposit")
-        .maxIntrRate(maxRate)
-        .baseIntrRate(baseRate)
-        .build();
   }
 
-  // 적금 상품을 응답 DTO로 변환
+  // 적금 상품 정보 DTO로 반환
   private ProductSummaryResponse convertSavingsToResponse(SavingsProducts savings) {
-    // 금융회사명 안전하게 가져오기
-    String companyName = "정보없음";
-    if (savings.getFinancialCompany() != null && savings.getFinancialCompany().getKorCoNm() != null) {
-      companyName = savings.getFinancialCompany().getKorCoNm();
+    try {
+      // 금융회사명 가져오기
+      String companyName = "정보없음";
+      if (savings.getFinancialCompany() != null && savings.getFinancialCompany().getKorCoNm() != null) {
+        companyName = savings.getFinancialCompany().getKorCoNm();
+      }
+
+      // 최고 우대 금리 계산
+      BigDecimal maxRate = BigDecimal.ZERO;
+      if (savings.getInterestRates() != null && !savings.getInterestRates().isEmpty()) {
+        maxRate = savings.getInterestRates().stream()
+            .filter(rate -> rate.getIntrRate2() != null)
+            .map(rate -> rate.getIntrRate2())
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+      }
+
+      // 기본 금리 계산
+      BigDecimal baseRate = BigDecimal.ZERO;
+      if (savings.getInterestRates() != null && !savings.getInterestRates().isEmpty()) {
+        baseRate = savings.getInterestRates().stream()
+            .filter(rate -> rate.getIntrRate() != null)
+            .map(rate -> rate.getIntrRate())
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+      }
+
+      return ProductSummaryResponse.builder()
+          .finPrdtCd(savings.getFinPrdtCd())
+          .finPrdtNm(savings.getFinPrdtNm() != null ? savings.getFinPrdtNm() : "상품명 정보없음")
+          .korCoNm(companyName)
+          .productType("saving")
+          .maxIntrRate(maxRate)
+          .baseIntrRate(baseRate)
+          .build();
+
+    } catch (Exception e) {
+      log.error("적금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}", savings.getFinPrdtCd(), e.getMessage());
+
+      return ProductSummaryResponse.builder()
+          .finPrdtCd(savings.getFinPrdtCd())
+          .finPrdtNm(savings.getFinPrdtNm() != null ? savings.getFinPrdtNm() : "상품명 정보없음")
+          .korCoNm("정보없음")
+          .productType("saving")
+          .maxIntrRate(BigDecimal.ZERO)
+          .baseIntrRate(BigDecimal.ZERO)
+          .build();
     }
-
-    // 최고 우대 금리 계산
-    BigDecimal maxRate = savings.getInterestRates().stream()
-        .map(rate -> rate.getIntrRate2())
-        .max(BigDecimal::compareTo)
-        .orElse(BigDecimal.ZERO);
-
-    // 기본 금리 계산
-    BigDecimal baseRate = savings.getInterestRates().stream()
-        .map(rate -> rate.getIntrRate())
-        .max(BigDecimal::compareTo)
-        .orElse(BigDecimal.ZERO);
-
-    return ProductSummaryResponse.builder()
-        .finPrdtCd(savings.getFinPrdtCd())
-        .finPrdtNm(savings.getFinPrdtNm())
-        .korCoNm(savings.getFinancialCompany().getKorCoNm())
-        .productType("saving")
-        .maxIntrRate(maxRate)
-        .baseIntrRate(baseRate)
-        .build();
   }
 
   // 상품 코드로 상품 찾기
