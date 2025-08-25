@@ -28,7 +28,7 @@ import static org.mockito.BDDMockito.*;
  * DetailService 통합 테스트
  */
 @SpringBootTest
-@ActiveProfiles("test") // test 프로필 활성화
+@ActiveProfiles("test")
 @Transactional // 각 테스트 후 롤백
 @DisplayName("DetailService 통합 테스트")
 public class DetailServiceTest {
