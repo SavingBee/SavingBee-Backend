@@ -56,8 +56,14 @@ public class DepositProducts {
 
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "finCoNo", referencedColumnName = "finCoNo", insertable = false, updatable = false)
+  @JoinColumn(name = "finCoNo", referencedColumnName = "finCoNo",
+      insertable = false, updatable = false)
   private FinancialCompanies financialCompany; // 금융회사
+
+  // 금융회사 고유번호 가져오기
+  public String getFinCoNo() {
+    return financialCompany != null ? financialCompany.getFinCoNo() : null;
+  }
 
   // 연관관계
   @OneToMany(mappedBy = "depositProduct", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

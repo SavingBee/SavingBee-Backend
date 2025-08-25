@@ -47,7 +47,11 @@ public class DetailService {
       DepositProducts deposit = depositOpt.get();
 
       // 조회수 증가
-      addToViewedProductsCache(productId);
+//      addToViewedProductsCache(productId);
+
+      if (Boolean.TRUE.equals(deposit.getIsActive())) {
+        addToViewedProductsCache(productId);
+      }
 
       log.info("예금 상품 조회 완료 - 상품코드:{}", deposit.getFinPrdtNm());
       return convertDepositToResponse(deposit);
@@ -59,7 +63,11 @@ public class DetailService {
       SavingsProducts saving = savingsOpt.get();
 
       // 조회수 증가
-      addToViewedProductsCache(productId);
+//      addToViewedProductsCache(productId);
+
+      if (Boolean.TRUE.equals(saving.getIsActive())) {
+        addToViewedProductsCache(productId);
+      }
 
       log.info("적금 상품 조회 완료 -상품코드:{}", saving.getFinPrdtNm());
       return convertSavingsToResponse(saving);
@@ -86,9 +94,16 @@ public class DetailService {
    * 예금 상품을 상세 응답 DTO로 변환
    */
   private ProductDetailResponse convertDepositToResponse(DepositProducts deposit) {
+    // 금융회사명 null 체크
+    String companyName = "정보없음";
+    if (deposit.getFinancialCompany() != null && deposit.getFinancialCompany().getKorCoNm() != null) {
+      companyName = deposit.getFinancialCompany().getKorCoNm();
+    }
+
     // 금리 옵션 정보 변환
     List<ProductDetailResponse.InterestRateOption> interestRateOptions =
-        deposit.getInterestRates().stream()
+        (deposit.getInterestRates() != null) ?
+            deposit.getInterestRates().stream()
             .map(rate -> ProductDetailResponse.InterestRateOption.builder()
                 .saveTrm(rate.getSaveTrm())
                 .intrRateTypeNm(
@@ -96,7 +111,8 @@ public class DetailService {
                 .intrRate(rate.getIntrRate())
                 .intrRate2(rate.getIntrRate2())
                 .build())
-            .collect(Collectors.toList());
+            .collect(Collectors.toList())
+        : List.of();
 
     // 기본 상품 정보 변환
     return ProductDetailResponse.builder()
@@ -104,7 +120,7 @@ public class DetailService {
         .finPrdtNm(deposit.getFinPrdtNm())
         .productType("deposit")
         .finCoNo(deposit.getFinCoNo())
-        .korCoNm(deposit.getFinancialCompany().getKorCoNm())
+        .korCoNm(companyName)
         .joinWay(deposit.getJoinWay())
         .joinDenyNm(FilterMappingUtil.convertJoinDenyCodeToDisplayName(deposit.getJoinDeny()))
         .joinMember(deposit.getJoinMember())
@@ -121,15 +137,21 @@ public class DetailService {
   /**
    * 적금 상품을 상세 응답 DTO로 변환
    */
-  private ProductDetailResponse convertSavingsToResponse(SavingsProducts saving) {
+  private ProductDetailResponse convertSavingsToResponse(SavingsProducts savings) {
+    // 금융회사명 null 체크
+    String companyName = "정보없음";
+    if (savings.getFinancialCompany() != null && savings.getFinancialCompany().getKorCoNm() != null) {
+      companyName = savings.getFinancialCompany().getKorCoNm();
+    }
     // 금리 옵션 정보 변환
     List<InterestRateOption> interestRateOptions =
-        saving.getInterestRates().stream()
+        (savings.getInterestRates() != null) ?
+        savings.getInterestRates().stream()
             .map(rate -> {
               // 총 저축금 계산 (저축기간 * 월 저축한도)
               BigDecimal totalMaxLimit = null;
-              if (rate.getSaveTrm() != null && saving.getMaxLimit() != null) {
-                totalMaxLimit = saving.getMaxLimit()
+              if (rate.getSaveTrm() != null && savings.getMaxLimit() != null) {
+                totalMaxLimit = savings.getMaxLimit()
                     .multiply(BigDecimal.valueOf(rate.getSaveTrm()));
               }
 
@@ -144,24 +166,25 @@ public class DetailService {
                   .totalMaxLimit(totalMaxLimit)
                   .build();
             })
-            .collect(Collectors.toList());
+            .collect(Collectors.toList())
+        : List.of();
 
     // 기본 상품 정보 변환
     return ProductDetailResponse.builder()
-        .finPrdtCd(saving.getFinPrdtCd())
-        .finPrdtNm(saving.getFinPrdtNm())
+        .finPrdtCd(savings.getFinPrdtCd())
+        .finPrdtNm(savings.getFinPrdtNm())
         .productType("saving")
-        .finCoNo(saving.getFinCoNo())
-        .korCoNm(saving.getFinancialCompany().getKorCoNm())
-        .joinWay(saving.getJoinWay())
-        .joinDenyNm(FilterMappingUtil.convertJoinDenyCodeToDisplayName(saving.getJoinDeny()))
-        .joinMember(saving.getJoinMember())
-        .maxLimit(saving.getMaxLimit())
-        .spclCnd(saving.getSpclCnd())
-        .mtrtInt(saving.getMtrtInt())
-        .etcNote(saving.getEtcNote())
-        .dclsStrtDay(formatDate(saving.getDclsStrtDay()))
-        .dclsEndDay(formatDate(saving.getDclsEndDay()))
+        .finCoNo(savings.getFinCoNo())
+        .korCoNm(companyName)
+        .joinWay(savings.getJoinWay())
+        .joinDenyNm(FilterMappingUtil.convertJoinDenyCodeToDisplayName(savings.getJoinDeny()))
+        .joinMember(savings.getJoinMember())
+        .maxLimit(savings.getMaxLimit())
+        .spclCnd(savings.getSpclCnd())
+        .mtrtInt(savings.getMtrtInt())
+        .etcNote(savings.getEtcNote())
+        .dclsStrtDay(formatDate(savings.getDclsStrtDay()))
+        .dclsEndDay(formatDate(savings.getDclsEndDay()))
         .interestRates(interestRateOptions)
         .build();
   }
