@@ -156,6 +156,13 @@ public class SearchService {
 
   // 예금 상품을 응답 DTO로 변환
   private ProductSummaryResponse convertDepositToResponse(DepositProducts deposit) {
+    // 금융회사명 안전하게 가져오기
+    String companyName = "정보없음";
+    if (deposit.getFinancialCompany() != null
+        && deposit.getFinancialCompany().getKorCoNm() != null) {
+      companyName = deposit.getFinancialCompany().getKorCoNm();
+    }
+
     // 최고 우대 금리 계산
     BigDecimal maxRate = deposit.getInterestRates().stream()
         .map(rate -> rate.getIntrRate2())
@@ -180,6 +187,12 @@ public class SearchService {
 
   // 적금 상품을 응답 DTO로 변환
   private ProductSummaryResponse convertSavingsToResponse(SavingsProducts savings) {
+    // 금융회사명 안전하게 가져오기
+    String companyName = "정보없음";
+    if (savings.getFinancialCompany() != null && savings.getFinancialCompany().getKorCoNm() != null) {
+      companyName = savings.getFinancialCompany().getKorCoNm();
+    }
+
     // 최고 우대 금리 계산
     BigDecimal maxRate = savings.getInterestRates().stream()
         .map(rate -> rate.getIntrRate2())
@@ -196,7 +209,7 @@ public class SearchService {
         .finPrdtCd(savings.getFinPrdtCd())
         .finPrdtNm(savings.getFinPrdtNm())
         .korCoNm(savings.getFinancialCompany().getKorCoNm())
-        .productType("savings")
+        .productType("saving")
         .maxIntrRate(maxRate)
         .baseIntrRate(baseRate)
         .build();
