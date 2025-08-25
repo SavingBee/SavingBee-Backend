@@ -29,6 +29,16 @@ public class SearchService {
   private final Set<String> viewedProductsCache = new HashSet<>();
 
   /**
+   * 상품 조회수 증가 - 상세 조회(DetailService) 시 호출
+   */
+  public void addToViewedProductsCache(String productCode) {
+    if (productCode != null && !productCode.trim().isEmpty()) {
+      viewedProductsCache.add(productCode);
+      log.debug("상품이 인기 상품 캐시에 추가되었습니다: {}", productCode);
+    }
+  }
+
+  /**
    * 상품 검색
    */
   public ResponseEntity<ProductSearchResponse> searchProduct(String productName) {
@@ -156,10 +166,10 @@ public class SearchService {
     return popularProducts.stream().limit(3).collect(Collectors.toList());
   }
 
-  // 예금 상품을 응답 DTO로 변환
+  // 예금 상품 정보 DTO로 반환
   private ProductSummaryResponse convertDepositToResponse(DepositProducts deposit) {
     try {
-      // 금융회사명 안전하게 가져오기
+      // 금융회사명 가져오기
       String companyName = "정보없음";
       if (deposit.getFinancialCompany() != null && deposit.getFinancialCompany().getKorCoNm() != null) {
         companyName = deposit.getFinancialCompany().getKorCoNm();
@@ -195,6 +205,7 @@ public class SearchService {
           .build();
 
     } catch (Exception e) {
+      
       log.error("예금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}",
           deposit.getFinPrdtCd(), e.getMessage());
 
@@ -210,10 +221,10 @@ public class SearchService {
     }
   }
 
-  // 적금 상품을 응답 DTO로 변환
+  // 적금 상품 정보 DTO로 반환
   private ProductSummaryResponse convertSavingsToResponse(SavingsProducts savings) {
     try {
-      // 금융회사명 안전하게 가져오기
+      // 금융회사명 가져오기
       String companyName = "정보없음";
       if (savings.getFinancialCompany() != null && savings.getFinancialCompany().getKorCoNm() != null) {
         companyName = savings.getFinancialCompany().getKorCoNm();
@@ -249,9 +260,10 @@ public class SearchService {
           .build();
 
     } catch (Exception e) {
+      
       log.error("적금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}",
           savings.getFinPrdtCd(), e.getMessage());
-
+      
       // 오류 발생 시 기본값으로 반환
       return ProductSummaryResponse.builder()
           .finPrdtCd(savings.getFinPrdtCd())
