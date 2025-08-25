@@ -49,4 +49,10 @@ public interface DepositInterestRatesRepository extends JpaRepository<DepositInt
   // 특정 조건의 상품들 중 최고 금리 상품들 조회
   @Query("SELECT d FROM DepositInterestRates d WHERE d.finPrdtCd IN :productCodes ORDER BY COALESCE(d.intrRate2, d.intrRate) DESC")
   List<DepositInterestRates> findTopRatesByProductCodes(@Param("productCodes") List<String> productCodes);
+  
+  // 예치 기간이 일치한 금리 정보 조회(상품코드 순)
+  List<DepositInterestRates> findAllBySaveTrmOrderByFinPrdtCd(Integer saveTrm);
+
+  // 상품코드 + 예치 기간으로 두 상품 정보 조회(상품 비교용)
+  List<DepositInterestRates> findAllByFinPrdtCdInAndSaveTrm(List<String> ids, Integer saveTrm);
 }

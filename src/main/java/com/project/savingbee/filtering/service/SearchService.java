@@ -2,6 +2,7 @@ package com.project.savingbee.filtering.service;
 
 import com.project.savingbee.common.entity.*;
 import com.project.savingbee.common.repository.*;
+import com.project.savingbee.filtering.dto.ProductSearchResponse;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.util.KoreanParsing;
 import java.math.BigDecimal;
@@ -40,11 +41,14 @@ public class SearchService {
   /**
    * 상품 검색
    */
-  public ResponseEntity<?> searchProduct(String productName) {
+  public ResponseEntity<ProductSearchResponse> searchProduct(String productName) {
     // 검색어 유효성 검사
     if (productName == null || productName.trim().length() < 2) {
-      return ResponseEntity.badRequest()
-          .body(Map.of("error", "검색어는 2자 이상 입력해주세요"));
+      return ResponseEntity.badRequest().body(
+          ProductSearchResponse.builder()
+              .message("검색어가 유효하지 않습니다.")
+              .build()
+      );
     }
 
     // 한국어 검색어 전처리
@@ -75,28 +79,36 @@ public class SearchService {
         searchResults.forEach(product ->
             viewedProductsCache.add(product.getFinPrdtCd()));
 
-        return ResponseEntity.ok(Map.of(
-            "products", searchResults,
-            "totalCount", searchResults.size(),
-            "searchTerm", processedName
-        ));
+        return ResponseEntity.ok(
+            ProductSearchResponse.builder()
+                .products(searchResults)
+                .totalCount(searchResults.size())
+                .searchTerm(processedName)
+                .build()
+        );
       }
 
       // productName과 동일한 finPrdtNm이 없을 경우 - 성공(200)
       // 인기있는 상품 3개 반환
       List<ProductSummaryResponse> popularProducts = popularProduct();
 
-      return ResponseEntity.ok(Map.of(
-          "products", Collections.emptyList(),
-          "popularProducts", popularProducts,
-          "totalCount", 0,
-          "message", "검색 결과가 없어 인기 상품을 추천합니다"
-      ));
+      return ResponseEntity.ok(
+          ProductSearchResponse.builder()
+              .products(new ArrayList<>())
+              .popularProducts(popularProducts) // 추가
+              .totalCount(0)
+              .searchTerm(processedName)
+              .message("검색 결과가 없어 인기 상품을 추천합니다") // 추가
+              .build()
+      );
 
     } catch (Exception e) {
       // 검색 실패 - 실패(400)
-      return ResponseEntity.badRequest()
-          .body(Map.of("error", "검색 중 오류가 발생했습니다: " + e.getMessage()));
+      return ResponseEntity.badRequest().body(
+          ProductSearchResponse.builder()
+              .message("검색 중 오류가 발생했습니다: " + e.getMessage())
+              .build()
+      );
     }
   }
 
@@ -193,8 +205,11 @@ public class SearchService {
           .build();
 
     } catch (Exception e) {
-      log.error("예금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}", deposit.getFinPrdtCd(), e.getMessage());
+      
+      log.error("예금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}",
+          deposit.getFinPrdtCd(), e.getMessage());
 
+      // 오류 발생 시 기본값으로 반환
       return ProductSummaryResponse.builder()
           .finPrdtCd(deposit.getFinPrdtCd())
           .finPrdtNm(deposit.getFinPrdtNm() != null ? deposit.getFinPrdtNm() : "상품명 정보없음")
@@ -245,8 +260,11 @@ public class SearchService {
           .build();
 
     } catch (Exception e) {
-      log.error("적금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}", savings.getFinPrdtCd(), e.getMessage());
-
+      
+      log.error("적금 상품 정보 변환 실패 - 상품코드: {}, 오류: {}",
+          savings.getFinPrdtCd(), e.getMessage());
+      
+      // 오류 발생 시 기본값으로 반환
       return ProductSummaryResponse.builder()
           .finPrdtCd(savings.getFinPrdtCd())
           .finPrdtNm(savings.getFinPrdtNm() != null ? savings.getFinPrdtNm() : "상품명 정보없음")
