@@ -46,7 +46,7 @@ public class UserProductController {
     public ResponseEntity<List<UserProductResponseDTO>> getUserProducts(
             @ModelAttribute UserProductRequestDTO request) {
         Long userId = getCurrentUserId();
-        List<UserProductResponseDTO> response = userProductService.getUserProducts(userId, request);
+        List<UserProductResponseDTO> response = userProductService.getUserProductsList(userId, request);
         return ResponseEntity.ok(response);
     }
     
@@ -56,7 +56,7 @@ public class UserProductController {
     @GetMapping("/{userProductId}")
     public ResponseEntity<UserProductResponseDTO> getUserProduct(@PathVariable Long userProductId) {
         Long userId = getCurrentUserId();
-        UserProductResponseDTO response = userProductService.getUserProduct(userId, userProductId);
+        UserProductResponseDTO response = userProductService.getUserProductById(userId, userProductId);
         return ResponseEntity.ok(response);
     }
     
@@ -68,7 +68,7 @@ public class UserProductController {
             @PathVariable Long userProductId,
             @Validated(UserProductRequestDTO.UpdateGroup.class) @RequestBody UserProductRequestDTO request) {
         Long userId = getCurrentUserId();
-        UserProductResponseDTO response = userProductService.updateUserProduct(userId, userProductId, request);
+        UserProductResponseDTO response = userProductService.updateUserProductById(userId, userProductId, request);
         return ResponseEntity.ok(response);
     }
     
@@ -78,7 +78,7 @@ public class UserProductController {
     @DeleteMapping("/{userProductId}")
     public ResponseEntity<Map<String, String>> deleteUserProduct(@PathVariable Long userProductId) {
         Long userId = getCurrentUserId();
-        userProductService.deleteUserProduct(userId, userProductId);
+        userProductService.deleteUserProductById(userId, userProductId);
         return ResponseEntity.ok(Map.of("message", "보유 상품이 삭제되었습니다."));
     }
     
