@@ -253,7 +253,7 @@ class DepositFilterServiceTest {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
         .filters(DepositFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("0010001", "0010002"))
+            .orgTypeCode(Arrays.asList("020000"))
             .build())
         .build();
     request.setPage(1);
@@ -446,7 +446,7 @@ class DepositFilterServiceTest {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
         .filters(DepositFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("0010001", "0010002"))
+            .orgTypeCode(Arrays.asList("020000"))
             .saveTrm(Arrays.asList(12))
             .intrRateType(Arrays.asList("S"))
             .intrRate2(RangeFilter.builder()
@@ -605,7 +605,7 @@ class DepositFilterServiceTest {
     // Given
     DepositFilterRequest request = DepositFilterRequest.builder()
         .filters(DepositFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("9999999")) // 존재하지 않는 금융회사
+            .orgTypeCode(Arrays.asList("9999999")) // 존재하지 않는 금융회사
             .build())
         .build();
     request.setPage(1);

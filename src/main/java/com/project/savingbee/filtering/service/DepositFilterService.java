@@ -142,8 +142,8 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
     DepositFilterRequest.Filters filters = request.getFilters();
 
     // 금융회사 번호 필터
-    if (filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty()) {
-      spec = spec.and(filterFinCoNum(filters.getFinCoNo()));
+    if (filters.getOrgTypeCode() != null && !filters.getOrgTypeCode().isEmpty()) {
+      spec = spec.and(filterFinCoNum(filters.getOrgTypeCode()));
     }
 
     // 가입제한 필터
@@ -240,8 +240,12 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
   /**
    * 금융회사 번호 필터
    */
-  private Specification<DepositProducts> filterFinCoNum(List<String> finCoNumbers) {
-    return (root, query, cb) -> root.get("finCoNo").in(finCoNumbers);
+  private Specification<DepositProducts> filterFinCoNum(List<String> getOrgTypeCode) {
+    return (root, query, cb) -> {
+      // 금융회사 테이블과 조인
+      var financialCompanyJoin = root.join("financialCompany", JoinType.INNER);
+      return financialCompanyJoin.get("orgTypeCode").in(getOrgTypeCode);
+    };
   }
 
   /**

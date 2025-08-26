@@ -126,8 +126,8 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
     SavingFilterRequest.Filters filters = request.getFilters();
 
     // 금융회사 번호 필터
-    if (filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty()) {
-      spec = spec.and(filterFinCoNum(filters.getFinCoNo()));
+    if (filters.getOrgTypeCode() != null && !filters.getOrgTypeCode().isEmpty()) {
+      spec = spec.and(filterFinCoNum(filters.getOrgTypeCode()));
     }
 
     // 가입 제한 필터

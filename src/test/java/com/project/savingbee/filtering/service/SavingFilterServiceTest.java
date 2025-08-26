@@ -259,7 +259,7 @@ public class SavingFilterServiceTest {
     // Given
     SavingFilterRequest request = SavingFilterRequest.builder()
         .filters(SavingFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("0010001", "0010002"))
+            .orgTypeCode(Arrays.asList("020000"))
             .build())
         .build();
     request.setPage(1);
@@ -468,7 +468,7 @@ public class SavingFilterServiceTest {
     // Given
     SavingFilterRequest request = SavingFilterRequest.builder()
         .filters(SavingFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("0010001", "0010002"))
+            .orgTypeCode(Arrays.asList("020000"))
             .saveTrm(Arrays.asList(12))
             .rsrvType(Arrays.asList("S")) // 정액적립식
             .intrRateType(Arrays.asList("S"))
@@ -631,7 +631,7 @@ public class SavingFilterServiceTest {
     // Given
     SavingFilterRequest request = SavingFilterRequest.builder()
         .filters(SavingFilterRequest.Filters.builder()
-            .finCoNo(Arrays.asList("9999999")) // 존재하지 않는 금융회사
+            .orgTypeCode(Arrays.asList("9999999")) // 존재하지 않는 금융회사
             .build())
         .build();
     request.setPage(1);
