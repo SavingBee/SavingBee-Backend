@@ -1,11 +1,14 @@
 package com.project.savingbee.filtering.service;
 
+import com.project.savingbee.common.entity.FinancialCompanies;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
 import com.project.savingbee.filtering.dto.*;
 import com.project.savingbee.filtering.enums.PreConMapping;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -225,11 +228,14 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   /**
    * 금융회사 번호 필터
    */
-  private Specification<SavingsProducts> filterFinCoNum(List<String> orgTypeCodes){
+  private Specification<SavingsProducts> filterFinCoNum(List<String> orgTypeCode){
     return (root, query, cb) -> {
-      // 금융회사 테이블과 조인
-      var financialCompanyJoin = root.join("financialCompany", JoinType.INNER);
-      return financialCompanyJoin.get("orgTypeCode").in(orgTypeCodes);
+      Subquery<String> subquery = query.subquery(String.class);
+      Root<FinancialCompanies> fcRoot = subquery.from(FinancialCompanies.class);
+      subquery.select(fcRoot.get("finCoNo"))
+          .where(fcRoot.get("orgTypeCode").in(orgTypeCode));
+
+      return root.get("finCoNo").in(subquery);
     };
   }
 

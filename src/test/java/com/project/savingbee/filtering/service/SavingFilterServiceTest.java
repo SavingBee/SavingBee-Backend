@@ -1,5 +1,7 @@
 package com.project.savingbee.filtering.service;
 
+import com.project.savingbee.common.entity.DepositInterestRates;
+import com.project.savingbee.common.entity.DepositProducts;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.common.entity.FinancialCompanies;
@@ -62,6 +64,7 @@ public class SavingFilterServiceTest {
         FinancialCompanies.builder()
             .finCoNo("0010001")
             .korCoNm("우리은행")
+            .orgTypeCode("020000")
             .build()
     );
 
@@ -69,6 +72,7 @@ public class SavingFilterServiceTest {
         FinancialCompanies.builder()
             .finCoNo("0010002")
             .korCoNm("국민은행")
+            .orgTypeCode("020000")
             .build()
     );
 
@@ -76,151 +80,96 @@ public class SavingFilterServiceTest {
         FinancialCompanies.builder()
             .finCoNo("0010003")
             .korCoNm("신한은행")
+            .orgTypeCode("020000")
             .build()
     );
 
-    // 적금 상품 생성
+    // 예금 상품 생성
     SavingsProducts highRateProduct = savingsProductsRepository.save(
         SavingsProducts.builder()
-            .finPrdtCd("SAVING_HIGH_001")
-            .finPrdtNm("고금리특별적금")
+            .finPrdtCd("HIGH_RATE_001")
+            .finPrdtNm("고금리특별예금")
             .finCoNo("0010001")
             .joinWay("영업점,인터넷,스마트폰")
             .spclCnd("신규고객 우대")
             .joinDeny("1")
             .joinMember("개인")
-            .maxLimit(new BigDecimal("1000000")) // 월 100만원
+            .maxLimit(new BigDecimal("100000000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
             .build()
     );
 
     SavingsProducts mediumRateProduct = savingsProductsRepository.save(
         SavingsProducts.builder()
-            .finPrdtCd("SAVING_MEDIUM_001")
-            .finPrdtNm("안정금리적금")
+            .finPrdtCd("MEDIUM_RATE_001")
+            .finPrdtNm("안정금리예금")
             .finCoNo("0010002")
             .joinWay("영업점")
             .spclCnd("일반고객 대상")
             .joinDeny("1")
             .joinMember("개인")
-            .maxLimit(new BigDecimal("500000")) // 월 50만원
+            .maxLimit(new BigDecimal("50000000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
             .build()
     );
 
-    SavingsProducts freeTypeProduct = savingsProductsRepository.save(
+    SavingsProducts lowRateProduct = savingsProductsRepository.save(
         SavingsProducts.builder()
-            .finPrdtCd("SAVING_FREE_001")
-            .finPrdtNm("자유적립식적금")
+            .finPrdtCd("LOW_RATE_001")
+            .finPrdtNm("기본예금")
             .finCoNo("0010003")
             .joinWay("영업점,인터넷")
             .spclCnd("제한없음")
             .joinDeny("1")
             .joinMember("개인")
-            .maxLimit(new BigDecimal("300000")) // 월 30만원
+            .maxLimit(new BigDecimal("30000000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
             .build()
     );
 
-    // 고금리 상품 금리 (정액적립식)
+    // 고금리 상품 금리
     List<SavingsInterestRates> highRateInterestRates = savingsInterestRatesRepository.saveAll(
         Arrays.asList(
+            // 고금리 상품 금리
             SavingsInterestRates.builder()
-                .finPrdtCd("SAVING_HIGH_001")
-                .intrRateType("S") // 단리
-                .rsrvType("S") // 정액적립식
-                .saveTrm(12)
-                .intrRate(new BigDecimal("3.50"))
-                .intrRate2(new BigDecimal("4.00"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .finPrdtCd("HIGH_RATE_001")
+                .intrRateType("S").saveTrm(12)
+                .intrRate(new BigDecimal("3.50")).intrRate2(new BigDecimal("4.00"))
                 .build(),
             SavingsInterestRates.builder()
-                .finPrdtCd("SAVING_HIGH_001")
-                .intrRateType("S")
-                .rsrvType("S")
-                .saveTrm(24)
-                .intrRate(new BigDecimal("3.70"))
-                .intrRate2(new BigDecimal("4.20"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .finPrdtCd("HIGH_RATE_001")
+                .intrRateType("S").saveTrm(24)
+                .intrRate(new BigDecimal("3.70")).intrRate2(new BigDecimal("4.20"))
                 .build(),
             SavingsInterestRates.builder()
-                .finPrdtCd("SAVING_HIGH_001")
-                .intrRateType("M") // 복리
-                .rsrvType("S")
-                .saveTrm(12)
-                .intrRate(new BigDecimal("3.45"))
-                .intrRate2(new BigDecimal("3.95"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build()
-        ));
+                .finPrdtCd("HIGH_RATE_001")
+                .intrRateType("M").saveTrm(12)
+                .intrRate(new BigDecimal("3.45")).intrRate2(new BigDecimal("3.95"))
+                .build(),
 
-    // 중간금리 상품 금리 (정액적립식)
-    List<SavingsInterestRates> mediumRateInterestRates = savingsInterestRatesRepository.saveAll(
-        Arrays.asList(
+            // 중간금리 상품 금리
             SavingsInterestRates.builder()
-                .finPrdtCd("SAVING_MEDIUM_001")
-                .intrRateType("S")
-                .rsrvType("S")
-                .saveTrm(12)
-                .intrRate(new BigDecimal("2.50"))
-                .intrRate2(new BigDecimal("2.80"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .finPrdtCd("MEDIUM_RATE_001")
+                .intrRateType("S").saveTrm(12)
+                .intrRate(new BigDecimal("2.50")).intrRate2(new BigDecimal("2.80"))
                 .build(),
             SavingsInterestRates.builder()
-                .finPrdtCd("SAVING_MEDIUM_001")
-                .intrRateType("S")
-                .rsrvType("S")
-                .saveTrm(24)
-                .intrRate(new BigDecimal("2.60"))
-                .intrRate2(new BigDecimal("2.90"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build()
-        ));
+                .finPrdtCd("MEDIUM_RATE_001")
+                .intrRateType("S").saveTrm(24)
+                .intrRate(new BigDecimal("2.60")).intrRate2(new BigDecimal("2.90"))
+                .build(),
 
-    // 자유적립식 상품 금리
-    List<SavingsInterestRates> freeTypeInterestRates = Arrays.asList(
-        savingsInterestRatesRepository.save(
+            // 낮은금리 상품 금리
             SavingsInterestRates.builder()
-                .finPrdtCd("SAVING_FREE_001")
-                .intrRateType("S")
-                .rsrvType("F") // 자유적립식
-                .saveTrm(12)
-                .intrRate(new BigDecimal("1.50"))
-                .intrRate2(new BigDecimal("1.80"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .finPrdtCd("LOW_RATE_001")
+                .intrRateType("S").saveTrm(12)
+                .intrRate(new BigDecimal("1.50")).intrRate2(new BigDecimal("1.80"))
                 .build()
         )
     );
-
-    // 양방향 연관관계 설정
-    highRateProduct.setFinancialCompany(wooriBank);
-    highRateProduct.setInterestRates(highRateInterestRates);
-
-    mediumRateProduct.setFinancialCompany(kbBank);
-    mediumRateProduct.setInterestRates(mediumRateInterestRates);
-
-    freeTypeProduct.setFinancialCompany(shinhanBank);
-    freeTypeProduct.setInterestRates(freeTypeInterestRates);
-
-    // 금리 엔티티에도 상품 연관관계 설정
-    highRateInterestRates.forEach(rate -> rate.setSavingsProduct(highRateProduct));
-    mediumRateInterestRates.forEach(rate -> rate.setSavingsProduct(mediumRateProduct));
-    freeTypeInterestRates.forEach(rate -> rate.setSavingsProduct(freeTypeProduct));
   }
 
   @Test

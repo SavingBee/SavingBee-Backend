@@ -10,6 +10,7 @@ import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.dto.RangeFilter;
 import com.project.savingbee.filtering.dto.SortFilter;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -30,7 +32,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 @SpringBootTest
-@Transactional
 @ActiveProfiles("test")
 @DisplayName("예금 필터 서비스 통합 테스트")
 class DepositFilterServiceTest {
@@ -50,6 +51,9 @@ class DepositFilterServiceTest {
   @Autowired
   private FinancialCompaniesRepository financialCompaniesRepository;
 
+  @Autowired
+  private EntityManager entityManager;
+
   @BeforeEach
   void setUp() {
     // 테스트 데이터 초기화
@@ -57,34 +61,44 @@ class DepositFilterServiceTest {
     depositProductsRepository.deleteAll();
     financialCompaniesRepository.deleteAll();
 
-    // 금융회사 생성
-    FinancialCompanies wooriBank = financialCompaniesRepository.save(
+    // 1단계: FinancialCompanies만 먼저 저장 (별도 트랜잭션)
+    saveFinancialCompaniesInSeparateTransaction();
+
+    // 2단계: DepositProducts 저장 (finCoNo만 사용, 별도 트랜잭션)
+    saveDepositProductsInSeparateTransaction();
+
+    // 3단계: DepositInterestRates 저장 (별도 트랜잭션)
+    saveDepositInterestRatesInSeparateTransaction();
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  private void saveFinancialCompaniesInSeparateTransaction() {
+    financialCompaniesRepository.saveAll(Arrays.asList(
         FinancialCompanies.builder()
             .finCoNo("0010001")
             .korCoNm("우리은행")
-            .build()
-    );
-
-    FinancialCompanies kbBank = financialCompaniesRepository.save(
+            .orgTypeCode("020000")
+            .build(),
         FinancialCompanies.builder()
             .finCoNo("0010002")
             .korCoNm("국민은행")
-            .build()
-    );
-
-    FinancialCompanies shinhanBank = financialCompaniesRepository.save(
+            .orgTypeCode("020000")
+            .build(),
         FinancialCompanies.builder()
             .finCoNo("0010003")
             .korCoNm("신한은행")
+            .orgTypeCode("020000")
             .build()
-    );
+    ));
+  }
 
-    // 예금 상품 생성
-    DepositProducts highRateProduct = depositProductsRepository.save(
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  private void saveDepositProductsInSeparateTransaction() {
+    depositProductsRepository.saveAll(Arrays.asList(
         DepositProducts.builder()
             .finPrdtCd("HIGH_RATE_001")
             .finPrdtNm("고금리특별예금")
-            .finCoNo("0010001")
+            .finCoNo("0010001")  // finCoNo만 설정, financialCompany 연관관계 설정 안함
             .joinWay("영업점,인터넷,스마트폰")
             .spclCnd("신규고객 우대")
             .joinDeny("1")
@@ -92,12 +106,7 @@ class DepositFilterServiceTest {
             .maxLimit(new BigDecimal("100000000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
-            .build()
-    );
-
-    DepositProducts mediumRateProduct = depositProductsRepository.save(
+            .build(),
         DepositProducts.builder()
             .finPrdtCd("MEDIUM_RATE_001")
             .finPrdtNm("안정금리예금")
@@ -109,12 +118,7 @@ class DepositFilterServiceTest {
             .maxLimit(new BigDecimal("50000000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
-            .build()
-    );
-
-    DepositProducts lowRateProduct = depositProductsRepository.save(
+            .build(),
         DepositProducts.builder()
             .finPrdtCd("LOW_RATE_001")
             .finPrdtNm("기본예금")
@@ -126,95 +130,61 @@ class DepositFilterServiceTest {
             .maxLimit(new BigDecimal("30000000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
             .build()
-    );
+    ));
+  }
 
-    // 고금리 상품 금리
-    List<DepositInterestRates> highRateInterestRates = depositInterestRatesRepository.saveAll(
-        Arrays.asList(
-            DepositInterestRates.builder()
-                .finPrdtCd("HIGH_RATE_001")
-                .intrRateType("S")
-                .saveTrm(12)
-                .intrRate(new BigDecimal("3.50"))
-                .intrRate2(new BigDecimal("4.00"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build(),
-            DepositInterestRates.builder()
-                .finPrdtCd("HIGH_RATE_001")
-                .intrRateType("S")
-                .saveTrm(24)
-                .intrRate(new BigDecimal("3.70"))
-                .intrRate2(new BigDecimal("4.20"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build(),
-            DepositInterestRates.builder()
-                .finPrdtCd("HIGH_RATE_001")
-                .intrRateType("M")
-                .saveTrm(12)
-                .intrRate(new BigDecimal("3.45"))
-                .intrRate2(new BigDecimal("3.95"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build()
-        ));
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  private void saveDepositInterestRatesInSeparateTransaction() {
+    depositInterestRatesRepository.saveAll(Arrays.asList(
+        // 고금리 상품 금리
+        DepositInterestRates.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .intrRateType("S")
+            .saveTrm(12)
+            .intrRate(new BigDecimal("3.50"))
+            .intrRate2(new BigDecimal("4.00"))
+            .build(),
+        DepositInterestRates.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .intrRateType("S")
+            .saveTrm(24)
+            .intrRate(new BigDecimal("3.70"))
+            .intrRate2(new BigDecimal("4.20"))
+            .build(),
+        DepositInterestRates.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .intrRateType("M")
+            .saveTrm(12)
+            .intrRate(new BigDecimal("3.45"))
+            .intrRate2(new BigDecimal("3.95"))
+            .build(),
 
-    // 중간금리 상품 금리
-    List<DepositInterestRates> mediumRateInterestRates = depositInterestRatesRepository.saveAll(
-        Arrays.asList(
-            DepositInterestRates.builder()
-                .finPrdtCd("MEDIUM_RATE_001")
-                .intrRateType("S")
-                .saveTrm(12)
-                .intrRate(new BigDecimal("2.50"))
-                .intrRate2(new BigDecimal("2.80"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build(),
-            DepositInterestRates.builder()
-                .finPrdtCd("MEDIUM_RATE_001")
-                .intrRateType("S")
-                .saveTrm(24)
-                .intrRate(new BigDecimal("2.60"))
-                .intrRate2(new BigDecimal("2.90"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build()
-        ));
+        // 중간금리 상품 금리
+        DepositInterestRates.builder()
+            .finPrdtCd("MEDIUM_RATE_001")
+            .intrRateType("S")
+            .saveTrm(12)
+            .intrRate(new BigDecimal("2.50"))
+            .intrRate2(new BigDecimal("2.80"))
+            .build(),
+        DepositInterestRates.builder()
+            .finPrdtCd("MEDIUM_RATE_001")
+            .intrRateType("S")
+            .saveTrm(24)
+            .intrRate(new BigDecimal("2.60"))
+            .intrRate2(new BigDecimal("2.90"))
+            .build(),
 
-    // 낮은금리 상품 금리
-    List<DepositInterestRates> lowRateInterestRates = Arrays.asList(
-        depositInterestRatesRepository.save(
-            DepositInterestRates.builder()
-                .finPrdtCd("LOW_RATE_001")
-                .intrRateType("S")
-                .saveTrm(12)
-                .intrRate(new BigDecimal("1.50"))
-                .intrRate2(new BigDecimal("1.80"))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build()
-        )
-    );
-
-    // 양방향 연관관계 설정
-    highRateProduct.setFinancialCompany(wooriBank);
-    highRateProduct.setInterestRates(highRateInterestRates);
-
-    mediumRateProduct.setFinancialCompany(kbBank);
-    mediumRateProduct.setInterestRates(mediumRateInterestRates);
-
-    lowRateProduct.setFinancialCompany(shinhanBank);
-    lowRateProduct.setInterestRates(lowRateInterestRates);
-
-    // 금리 엔티티에도 상품 연관관계 설정
-    highRateInterestRates.forEach(rate -> rate.setDepositProduct(highRateProduct));
-    mediumRateInterestRates.forEach(rate -> rate.setDepositProduct(mediumRateProduct));
-    lowRateInterestRates.forEach(rate -> rate.setDepositProduct(lowRateProduct));
+        // 낮은금리 상품 금리
+        DepositInterestRates.builder()
+            .finPrdtCd("LOW_RATE_001")
+            .intrRateType("S")
+            .saveTrm(12)
+            .intrRate(new BigDecimal("1.50"))
+            .intrRate2(new BigDecimal("1.80"))
+            .build()
+    ));
   }
 
   @Test

@@ -1,11 +1,15 @@
 package com.project.savingbee.filtering.service;
 
 import com.project.savingbee.common.entity.DepositProducts;
+import com.project.savingbee.common.entity.FinancialCompanies;
 import com.project.savingbee.common.repository.DepositProductsRepository;
+import com.project.savingbee.common.repository.FinancialCompaniesRepository;
 import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.dto.RangeFilter;
 import com.project.savingbee.filtering.enums.PreConMapping;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +35,8 @@ import java.util.stream.Collectors;
 public class DepositFilterService extends BaseFilterService<DepositProducts, DepositFilterRequest> {
 
   private final DepositProductsRepository depositProductsRepository;
+
+  private final FinancialCompaniesRepository financialCompaniesRepository;
 
   /**
    * 예금 필터링 필터링 조건
@@ -72,6 +78,11 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
     Specification<DepositProducts> spec = buildFilterSpecification(request);
     List<DepositProducts> allProducts = depositProductsRepository.findAll(spec);
 
+    allProducts.forEach(product -> {
+      if (product.getInterestRates() != null) {
+        product.getInterestRates().size(); // lazy loading 강제 실행
+      }
+    });
     // 2. 중복 제거
     List<DepositProducts> distinctProducts = removeDuplicates(allProducts);
 
@@ -242,9 +253,12 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
    */
   private Specification<DepositProducts> filterFinCoNum(List<String> getOrgTypeCode) {
     return (root, query, cb) -> {
-      // 금융회사 테이블과 조인
-      var financialCompanyJoin = root.join("financialCompany", JoinType.INNER);
-      return financialCompanyJoin.get("orgTypeCode").in(getOrgTypeCode);
+      Subquery<String> subquery = query.subquery(String.class);
+      Root<FinancialCompanies> fcRoot = subquery.from(FinancialCompanies.class);
+      subquery.select(fcRoot.get("finCoNo"))
+          .where(fcRoot.get("orgTypeCode").in(getOrgTypeCode));
+
+      return root.get("finCoNo").in(subquery);
     };
   }
 
@@ -447,5 +461,21 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
   @Override
   protected String getProductCode(DepositProducts product) {
     return product.getFinPrdtCd();
+  }
+
+  // 필터링 로직 구현 헬퍼 메서드
+  private boolean matchesSpecification(DepositProducts product, DepositFilterRequest request) {
+    DepositFilterRequest.Filters filters = request.getFilters();
+
+    // orgTypeCode 필터링
+    if (filters.getOrgTypeCode() != null && !filters.getOrgTypeCode().isEmpty()) {
+      boolean found = financialCompaniesRepository.findById(product.getFinCoNo())
+          .map(fc -> filters.getOrgTypeCode().contains(fc.getOrgTypeCode()))
+          .orElse(false);
+      if (!found) return false;
+    }
+
+    // 다른 필터들도 동일하게 구현...
+    return true;
   }
 }
