@@ -7,6 +7,7 @@ import com.project.savingbee.common.entity.ProductAlertEvent.EventStatus;
 import com.project.savingbee.common.entity.ProductAlertEvent.ProductKind;
 import com.project.savingbee.common.entity.ProductAlertEvent.TriggerType;
 import com.project.savingbee.common.entity.ProductAlertSetting;
+import com.project.savingbee.common.entity.ProductAlertSetting.AlertType;
 import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.DepositInterestRatesRepository;
@@ -54,6 +55,12 @@ public class AlertMatchService {
     List<ProductAlertSetting> productAlertSettings = productAlertSettingRepository.findAll();
 
     for (ProductAlertSetting setting : productAlertSettings) {
+      // 현재 User 정보에 전화번호가 없으므로, SMS 설정 시 스캔 X
+      if (setting.getAlertType() == AlertType.SMS) {
+        setting.setLastEvaluatedAt(now.minusSeconds(1));
+        continue;
+      }
+
       LocalDateTime since = setting.getLastEvaluatedAt();
       if (since == null) {
         since = now.minusSeconds(1);

@@ -1,8 +1,9 @@
-package com.project.savingbee.productAlert.channel.sender;
+package com.project.savingbee.productAlert.channel.sender.email;
 
 import com.project.savingbee.productAlert.channel.compose.AlertMessage;
 import com.project.savingbee.productAlert.channel.exception.NonRetryableChannelException;
 import com.project.savingbee.productAlert.channel.exception.RetryableChannelException;
+import com.project.savingbee.productAlert.channel.sender.ChannelSender;
 import jakarta.mail.MessagingException;
 import jakarta.mail.SendFailedException;
 import jakarta.mail.internet.AddressException;
