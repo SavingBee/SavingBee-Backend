@@ -120,7 +120,7 @@ class UserProductServiceTest {
         given(userProductRepository.save(any(UserProduct.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
-        UserProductResponseDTO response = userProductService.updateUserProduct(userId, productId, request);
+        UserProductResponseDTO response = userProductService.updateUserProductById(userId, productId, request);
 
         // then
         assertThat(response.getBankName()).isEqualTo("신한은행");
@@ -143,7 +143,7 @@ class UserProductServiceTest {
         given(userProductRepository.save(any(UserProduct.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
-        userProductService.deleteUserProduct(userId, productId);
+        userProductService.deleteUserProductById(userId, productId);
 
         // then
         assertThat(existing.getIsActive()).isFalse();
@@ -167,7 +167,7 @@ class UserProductServiceTest {
         given(userProductRepository.findById(productId)).willReturn(Optional.of(product));
 
         // when
-        UserProductResponseDTO response = userProductService.getUserProduct(userId, productId);
+        UserProductResponseDTO response = userProductService.getUserProductById(userId, productId);
 
         // then
         assertThat(response.getProductName()).isEqualTo("NH예금");
