@@ -1,6 +1,7 @@
-package com.project.savingbee.productAlert.channel.sender;
+package com.project.savingbee.productAlert.channel.sender.push;
 
 import com.project.savingbee.productAlert.channel.compose.AlertMessage;
+import com.project.savingbee.productAlert.channel.sender.ChannelSender;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
