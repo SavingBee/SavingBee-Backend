@@ -87,7 +87,7 @@ class DepositFilterServiceTest {
         FinancialCompanies.builder()
             .finCoNo("0010003")
             .korCoNm("신한은행")
-            .orgTypeCode("020000")
+            .orgTypeCode("030000")
             .build()
     ));
   }

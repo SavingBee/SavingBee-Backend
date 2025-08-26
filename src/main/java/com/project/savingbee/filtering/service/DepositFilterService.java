@@ -76,7 +76,13 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
 
     // 1. 필터링 조건만 적용하여 모든 데이터 조회 - 정렬 없이
     Specification<DepositProducts> spec = buildFilterSpecification(request);
-    List<DepositProducts> allProducts = depositProductsRepository.findAll(spec);
+//    List<DepositProducts> allProducts = depositProductsRepository.findAll(spec);
+
+    List<DepositProducts> allProducts = depositProductsRepository.findAll((root, query, cb) -> {
+      root.fetch("interestRates", JoinType.LEFT);
+      root.fetch("financialCompany", JoinType.LEFT);
+      return spec.toPredicate(root, query, cb);
+    });
 
     allProducts.forEach(product -> {
       if (product.getInterestRates() != null) {
@@ -245,7 +251,13 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
    * 활성상품인지 확인
    */
   private Specification<DepositProducts> isActiveProduct() {
-    return (root, query, cb) -> cb.equal(root.get("isActive"), true);
+//    return (root, query, cb) -> cb.equal(root.get("isActive"), true);
+    return (root, query, cb) -> {
+      if (root == null) {
+        return cb.conjunction(); // root가 없으면 무조건 true
+      }
+      return cb.equal(root.get("isActive"), true);
+    };
   }
 
   /**
