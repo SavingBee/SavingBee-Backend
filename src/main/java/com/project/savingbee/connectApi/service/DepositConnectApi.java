@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 /**
- * 금융 감독원 예금 API 연결
+ * 금융감독원 예금 API 연결
  */
 @Service
 @Slf4j
@@ -33,6 +33,15 @@ public class DepositConnectApi {
   private final DepositInterestRatesRepository depositInterestRatesRepository;
   private final FinancialCompaniesRepository financialCompaniesRepository;
 
+  // 금융권별 처리 순서: 은행 -> 저축은행 -> 신협
+  private static final List<String> TOP_FIN_GRP_NOS = List.of(
+      "020000",  // 은행
+      "030300",  // 저축은행
+      "030200",  // 여신전문 (신협으로 분류)
+      "050000",  // 보험 (신협으로 분류)
+      "060000"   // 금융투자 (신협으로 분류)
+  );
+
   // API key
   @Value("${api.money.key}")
   private String moneyKey;
@@ -41,57 +50,59 @@ public class DepositConnectApi {
   private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
   /**
-   * 금융 감독원 예금 API 연결 메인 메서드
+   * 금융감독원 예금 API 연결 메인 메서드
    */
   @Transactional
-  public void connectDepositProducts() {
+  public void connectDepositApi() {
     try {
       log.info("예금 상품 API 연결 시작");
 
-      // TODO: WebClient 기본 설정과 생성 하나로 예금, 적금 둘 다 사용가능한 방법이 있는 지 확인
       // WebClient 기본 설정 및 생성
       WebClient webClient = WebClient.builder()
           .baseUrl("https://finlife.fss.or.kr/finlifeapi")
           .clientConnector(new ReactorClientHttpConnector(
               HttpClient.create()
-                  .followRedirect(true)
                   .responseTimeout(Duration.ofSeconds(30))
           ))
           .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
           .build();
 
-      // 첫 번째 페이지 호출하여 전체 페이지 수 확인
-      DepositApiResponse firstResponse = callDepositApi(webClient, 1);
-      if (firstResponse == null) {
-        log.error("첫 번째 페이지 호출 실패");
-        return;
-      }
+      // 각 금융권별로 순차 처리
+      for (String topFinGrpNo : TOP_FIN_GRP_NOS) {
+        log.info("{}번 금융권 처리 시작", topFinGrpNo);
 
-      // 데이터 1개 console log로 확인하기
-      logSampleData(firstResponse);
-
-      // 전체 페이지 수 확인
-      int maxPageNo = Integer.parseInt(firstResponse.getResult().getMaxPageNo());
-      log.info("총 {}페이지 데이터 처리 시작", maxPageNo);
-
-      for (int pageNo = 1; pageNo <= maxPageNo; pageNo++) {
-        DepositApiResponse response;
-        if (pageNo == 1) {
-          response = firstResponse; // 첫 페이지는 이미 호출했으므로 재사용
-        } else {
-          response = callDepositApi(webClient, pageNo);
+        // 첫 번째 페이지를 호출하여 전체 페이지 수 확인
+        DepositApiResponse firstResponse = callDepositApi(webClient, topFinGrpNo, 1);
+        if (firstResponse == null) {
+          log.error("{}번 금융권 첫 번째 페이지 호출 실패", topFinGrpNo);
+          continue;
         }
 
-        if (response != null) {
-          processDepositApiResponse(response);
-          log.info("{}페이지 처리 완료", pageNo);
+        // 전체 페이지 수 확인
+        int maxPageNo = Integer.parseInt(firstResponse.getResult().getMaxPageNo());
+        log.info("{}번 금융권 총 {}페이지 데이터 처리 시작", topFinGrpNo, maxPageNo);
+
+        for (int pageNo = 1; pageNo <= maxPageNo; pageNo++) {
+          DepositApiResponse response;
+          if (pageNo == 1) {
+            response = firstResponse; // 첫 페이지는 이미 호출했으므로 재사용
+          } else {
+            response = callDepositApi(webClient, topFinGrpNo, pageNo);
+          }
+
+          if (response != null) {
+            processDepositApiResponse(response, topFinGrpNo);
+            log.info("{}번 금융권 {}페이지 처리 완료", topFinGrpNo, pageNo);
+          }
         }
+
+        log.info("{}번 금융권 처리 완료", topFinGrpNo);
       }
 
       log.info("예금 상품 API 연결 완료");
 
     } catch (Exception e) {
-      log.error("예금 API 연결 중 오류 발생", e);
+      log.error("예금 API 연결 실패", e);
       throw new RuntimeException("예금 API 연결 실패", e);
     }
   }
@@ -99,16 +110,16 @@ public class DepositConnectApi {
   /**
    * 실제 API 호출 메서드
    */
-  private DepositApiResponse callDepositApi(WebClient webClient, int pageNo) {
+  private DepositApiResponse callDepositApi(WebClient webClient, String topFinGrpNo, int pageNo) {
     try {
-      log.debug("{}페이지 API 호출 시작", pageNo);
+      log.debug("{}번 금융권 {}페이지 API 호출 시작", topFinGrpNo, pageNo);
 
       // API 호출
       DepositApiResponse response = webClient.get()
           .uri(uriBuilder -> uriBuilder
               .path("/depositProductsSearch.json")  // 전체 경로
               .queryParam("auth", moneyKey) // API키
-              .queryParam("topFinGrpNo", "020000")
+              .queryParam("topFinGrpNo", topFinGrpNo) // 금융권별로 동적 처리
               .queryParam("pageNo", pageNo) // 페이지 번호
               .build())
           .retrieve()
@@ -137,8 +148,27 @@ public class DepositConnectApi {
       return response;
 
     } catch (Exception e) {
-      log.error("API 호출 중 예외 발생: ", e);
+      log.error("{}번 금융권 {}페이지 API 호출 중 예외 발생: ", topFinGrpNo, pageNo, e);
       return null;
+    }
+  }
+
+  /**
+   * topFinGrpNo를 orgTypeCode로 매핑
+   */
+  private String mapTopFinGrpNoToOrgTypeCode(String topFinGrpNo) {
+    switch (topFinGrpNo) {
+      case "020000": // 은행
+        return "020000";
+      case "030300": // 저축은행
+        return "030300";
+      case "030200": // 여신전문 → 신협으로 분류
+      case "050000": // 보험 → 신협으로 분류
+      case "060000": // 금융투자 → 신협으로 분류
+        return "050000";
+      default:
+        log.warn("알 수 없는 topFinGrpNo: {}, 기본값으로 050000 사용", topFinGrpNo);
+        return "050000";
     }
   }
 
@@ -147,10 +177,10 @@ public class DepositConnectApi {
    */
 
   /* API 데이터 DB에 저장하기*/
-  private void processDepositApiResponse(DepositApiResponse response) {
+  private void processDepositApiResponse(DepositApiResponse response, String topFinGrpNo) {
     // 금융회사 정보 FinancialCompanies 먼저 저장
     if (response.getResult().getBaseList() != null) {
-      saveFinancialCompanies(response.getResult().getBaseList());
+      saveFinancialCompanies(response.getResult().getBaseList(), topFinGrpNo);
       // 상품정보 DepositProducts에 저장
       saveDepositProducts(response.getResult().getBaseList());
     }
@@ -162,7 +192,8 @@ public class DepositConnectApi {
   }
 
   /* 금융 회사 정보 저장 */
-  private void saveFinancialCompanies(List<BaseListItem> baseList) {
+  private void saveFinancialCompanies(List<BaseListItem> baseList, String topFinGrpNo) {
+    String orgTypeCode = mapTopFinGrpNoToOrgTypeCode(topFinGrpNo);
     Set<String> processedFinCoNos = new HashSet<>();
 
     for (DepositApiResponse.BaseListItem item : baseList) {
@@ -173,6 +204,7 @@ public class DepositConnectApi {
           FinancialCompanies company = FinancialCompanies.builder()
               .finCoNo(item.getFinCoNo())
               .korCoNm(item.getKorCoNm())
+              .orgTypeCode(orgTypeCode) // 매핑된 orgTypeCode로 저장
               .build();
 
           financialCompaniesRepository.save(company);
@@ -190,7 +222,16 @@ public class DepositConnectApi {
         if (depositProductsRepository.existsById(item.getFinPrdtCd())) {
           continue;
         }
-        // 존재하지 않을 경ㅇ 저장
+
+        // 공시종료일 확인하여 isActive 설정
+        LocalDate dclsEndDay = ApiParsing.parseDate(item.getDclsEndDay());
+        boolean isActive = true;
+        if (dclsEndDay != null && dclsEndDay.isBefore(LocalDate.now())) {
+          isActive = false;
+          log.debug("상품 {} - 공시종료로 비활성화 (종료일: {})", item.getFinPrdtCd(), dclsEndDay);
+        }
+
+        // 존재하지 않을 경우 저장
         DepositProducts product = DepositProducts.builder()
             .finPrdtCd(item.getFinPrdtCd())
             .finPrdtNm(item.getFinPrdtNm())
@@ -202,8 +243,8 @@ public class DepositConnectApi {
             .etcNote(item.getEtcNote())
             .maxLimit(ApiParsing.parseBigDecimal(item.getMaxLimit()))
             .dclsStrtDay(ApiParsing.parseDate(item.getDclsStrtDay()))
-            .dclsEndDay(ApiParsing.parseDate(item.getDclsEndDay()))
-            .isActive(true)
+            .dclsEndDay(dclsEndDay)
+            .isActive(isActive) // 공시종료일 기준으로 설정
             .finCoNo(item.getFinCoNo())
             .build();
 
@@ -275,54 +316,12 @@ public class DepositConnectApi {
     if (response.getResult().getOptionList() != null && !response.getResult().getOptionList()
         .isEmpty()) {
       DepositApiResponse.OptionListItem sampleOption = response.getResult().getOptionList().get(0);
-      log.info("=== 샘플 금리 옵션 정보 ===");
-      log.info("이자율유형: {}", sampleOption.getIntrRateType());
-      log.info("저축기간: {}개월", sampleOption.getSaveTrm());
+      log.info("=== 샘플 예금 금리 정보 ===");
+      log.info("금리유형: {}", sampleOption.getIntrRateTypeNm());
+      log.info("저축기간: {} 개월", sampleOption.getSaveTrm());
       log.info("기본금리: {}%", sampleOption.getIntrRate());
-      log.info("최고우대금리: {}%", sampleOption.getIntrRate2());
+      log.info("우대금리: {}%", sampleOption.getIntrRate2());
       log.info("========================");
-    }
-  }
-
-
-  /**
-   * 테스트용 - 1 페이지만 처리
-   */
-  @Transactional
-  public void testConnect() {
-    try {
-      log.info("예금 상품 API 연결 테스트 시작 1페이지");
-
-      WebClient webClient = WebClient.builder()
-          .baseUrl("https://finlife.fss.or.kr/finlifeapi")
-          .clientConnector(new ReactorClientHttpConnector(
-              HttpClient.create()
-                  .followRedirect(true)
-                  .responseTimeout(Duration.ofSeconds(30))
-          ))
-          .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
-          .build();
-
-      // 첫 번째 페이지 호출
-      DepositApiResponse firstResponse = callDepositApi(webClient, 1);
-      if (firstResponse == null) {
-        log.error("첫 번째 페이지 호출 실패");
-        return;
-      }
-
-      // 샘플 데이터 로그 확인
-      logSampleData(firstResponse);
-
-      if (firstResponse != null) {
-        processDepositApiResponse(firstResponse);
-        log.info("첫 페이지 데이터 처리 완료");
-      } else {
-        log.warn("데이터 처리 과정 문제 발생");
-      }
-
-    } catch (Exception e) {
-      log.error("예금 API 연결 중 오류 발생", e);
-      throw new RuntimeException("예금 API 연결 실패", e);
     }
   }
 }
