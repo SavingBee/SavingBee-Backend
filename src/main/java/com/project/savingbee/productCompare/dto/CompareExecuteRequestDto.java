@@ -25,9 +25,6 @@ public class CompareExecuteRequestDto {
   @NotNull
   private Integer termMonth;  // 예치 기간
 
-  @NotNull
-  private BigDecimal minRate; // 최소 이자율(%)
-
   @Getter
   public static class Selection {
     @NotNull
