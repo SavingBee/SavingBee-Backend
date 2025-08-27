@@ -77,6 +77,7 @@ public interface SavingsInterestRatesRepository extends JpaRepository<SavingsInt
   // 예치 기간이 일치한 금리 정보 조회(상품코드 순)
   List<SavingsInterestRates> findAllBySaveTrmOrderByFinPrdtCd(Integer saveTrm);
 
-  // 상품코드 + 예치 기간으로 두 상품 정보 조회(상품 비교용)
-  List<SavingsInterestRates> findAllByFinPrdtCdInAndSaveTrm(List<String> ids, Integer saveTrm);
+  // 상품코드 + 이자계산방식 + 기간으로 상품 정보 조회(상품 비교용)
+  Optional<SavingsInterestRates> findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm(
+      String finPrdtCd, String intrRateType, Integer saveTrm);
 }
