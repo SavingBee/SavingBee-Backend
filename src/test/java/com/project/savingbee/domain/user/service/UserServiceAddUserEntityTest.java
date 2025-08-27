@@ -68,7 +68,7 @@ class UserServiceAddUserEntityTest {
         given(userRepository.save(any(UserEntity.class))).willAnswer(invocation -> {
             UserEntity u = invocation.getArgument(0);
             // id 필드에 1L을 주입(엔티티 id가 private일 수 있으니 리플렉션 사용)
-            Field id = UserEntity.class.getDeclaredField("id");
+            Field id = UserEntity.class.getDeclaredField("userId");
             id.setAccessible(true);
             id.set(u, 1L);
             return u;
