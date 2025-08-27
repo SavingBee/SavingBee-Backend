@@ -24,8 +24,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class UserProduct {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "user_product_id", insertable = false, updatable = false)
   private Long userProductId; // 보유 상품 고유 ID
 
+  @Column(name = "user_id", insertable = false, updatable = false)
   private Long userId; // 사용자 ID
 
   private String bankName; // 은행명
@@ -59,7 +61,7 @@ public class UserProduct {
 
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "userId", referencedColumnName = "id", insertable = false, updatable = false)
+  @JoinColumn(name = "user_id", referencedColumnName = "user_id", insertable = false, updatable = false)
   private UserEntity userEntity; // 사용자
 
   // 연관관계

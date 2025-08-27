@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "cart", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"userId", "productCode", "productType"})
+    @UniqueConstraint(columnNames = {"user_id", "productCode", "productType"})
 })
 @Getter
 @Setter
@@ -27,7 +27,8 @@ public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long cartId;
-    
+
+    @Column(name = "user_id", insertable = false, updatable = false)
     private Long userId; // 사용자 ID
     
     private String productCode; // 상품코드 (finPrdtCd)
@@ -52,7 +53,7 @@ public class Cart {
     
     // 외래키 관계
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id", insertable = false, updatable = false)
     private UserEntity user;
     
     // 상품 타입 Enum

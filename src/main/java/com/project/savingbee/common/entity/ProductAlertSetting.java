@@ -24,6 +24,7 @@ public class ProductAlertSetting {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id; // Key
 
+  @Column(name = "user_id", insertable = false, updatable = false)
   private Long userId; // 사용자 ID
 
   private Boolean productTypeDeposit; // 예금
@@ -60,7 +61,7 @@ public class ProductAlertSetting {
 
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "userId", referencedColumnName = "id", insertable = false, updatable = false)
+  @JoinColumn(name = "user_id", referencedColumnName = "user_id", insertable = false, updatable = false)
   private UserEntity userEntity; // 사용자
 
   // Enum 정의
