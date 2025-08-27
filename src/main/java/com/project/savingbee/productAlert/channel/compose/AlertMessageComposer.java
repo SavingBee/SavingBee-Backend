@@ -28,8 +28,10 @@ public class AlertMessageComposer {
     return new AlertMessage(to, subject, body);
   }
 
+  // 사용자 정보에 전화번호가 없으므로 현재는 SMS 비활성
   private AlertMessage composeSms(ProductAlertEvent event) {
-    String to = event.getProductAlertSetting().getUserEntity().getEmail();
+    // String to = event.getProductAlertSetting().getUserEntity().getPhone();
+    String to = null;
     String body = "내용";
 
     return new AlertMessage(to, null, body);

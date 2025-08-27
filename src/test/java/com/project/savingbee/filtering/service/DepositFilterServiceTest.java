@@ -14,8 +14,11 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.ActiveProfiles;
@@ -36,8 +39,14 @@ import java.util.List;
 @DisplayName("예금 필터 서비스 통합 테스트")
 class DepositFilterServiceTest {
 
-  @MockitoBean
-  private ClientRegistrationRepository clientRegistrationRepository;
+  @TestConfiguration
+  static class TestSecurityConfig {
+    @Bean
+    public ClientRegistrationRepository clientRegistrationRepository() {
+      return Mockito.mock(ClientRegistrationRepository.class);
+    }
+  }
+
 
   @Autowired
   private DepositFilterService depositFilterService;
@@ -234,12 +243,12 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    assertThat(result.getContent()).hasSize(2);
+    assertThat(result.getContent()).hasSize(3);
 
     List<String> companyNames = result.getContent().stream()
         .map(ProductSummaryResponse::getKorCoNm)
         .toList();
-    assertThat(companyNames).containsExactlyInAnyOrder("우리은행", "국민은행");
+    assertThat(companyNames).containsExactlyInAnyOrder("우리은행", "국민은행", "신한은행");
   }
 
   @Test

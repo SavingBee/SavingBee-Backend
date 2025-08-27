@@ -1,20 +1,22 @@
-package com.project.savingbee.productAlert.channel.sender;
+package com.project.savingbee.productAlert.channel.sender.push;
 
 import com.project.savingbee.productAlert.channel.compose.AlertMessage;
+import com.project.savingbee.productAlert.channel.sender.ChannelSender;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 // 스텁 구현
-@Component("smsSender")
+@Component("pushSender")
 @RequiredArgsConstructor
-public class SmsChannelSender implements ChannelSender {
-  private static final Logger log = LoggerFactory.getLogger(SmsChannelSender.class);
+public class PushChannelSender implements ChannelSender {
+  private static final Logger log = LoggerFactory.getLogger(PushChannelSender.class);
 
   @Override
   public void send(AlertMessage message) {
-    log.info("[SMS][STUB] to={} body={}", message.getTo(), shorten(message.getBody()));
+    log.info("[PUSH][STUB] to={} subject={} body={}",
+        message.getTo(), message.getSubject(), shorten(message.getBody()));
   }
 
   private String shorten(String s){
