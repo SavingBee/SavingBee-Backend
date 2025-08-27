@@ -26,8 +26,8 @@ public final class CalcEngine {
             .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP))
         : A.multiply(BigDecimal.ONE.add(I).pow(termMonth).subtract(BigDecimal.ONE));
 
-    BigDecimal afterTaxInterest = interest.setScale(0, RoundingMode.DOWN);
-    long amountReceived = A.longValue() + afterTaxInterest.longValue();
+    long afterTaxInterest = interest.setScale(0, RoundingMode.DOWN).longValue();
+    long amountReceived = A.longValue() + afterTaxInterest;
 
     return new CalcResult(afterTaxInterest, amountReceived);
   }
@@ -65,9 +65,9 @@ public final class CalcEngine {
       }
     }
 
-    BigDecimal afterTaxInterest = interest.setScale(0, RoundingMode.DOWN);
+    long afterTaxInterest = interest.setScale(0, RoundingMode.DOWN).longValue();
     long amountReceived =
-        totalAmount.setScale(0, RoundingMode.DOWN).longValue() + afterTaxInterest.longValue();
+        totalAmount.setScale(0, RoundingMode.DOWN).longValue() + afterTaxInterest;
 
     return new CalcResult(afterTaxInterest, amountReceived);
   }
@@ -75,7 +75,7 @@ public final class CalcEngine {
   @Getter
   @AllArgsConstructor
   public static class CalcResult {
-    private final BigDecimal afterTaxInterest;  // 세후 이자
+    private final long afterTaxInterest;  // 세후 이자
     private final long amountReceived;  // 실수령액
   }
 
