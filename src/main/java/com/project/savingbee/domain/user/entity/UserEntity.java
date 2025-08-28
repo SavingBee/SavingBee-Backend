@@ -27,7 +27,8 @@ public class UserEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id; // 사용자 ID
+  @Column(name = "user_id")
+  private Long userId; // 사용자 ID
 
   @Column(name = "username", unique = true, nullable = false, updatable = false)
   private String username; //유저 이름

@@ -81,9 +81,10 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
                 .roleType(UserRoleType.USER)
                 .nickname(dto.getNickname())
                 .email(dto.getEmail())
+                .alarm(true)
                 .build();
 
-        Long userId = userRepository.save(entity).getId();
+        Long userId = userRepository.save(entity).getUserId();
 
         // 환영 이메일 발송 (선택사항)
         try {
@@ -125,9 +126,10 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
                 .roleType(UserRoleType.USER)
                 .nickname(dto.getNickname())
                 .email(dto.getEmail())
+                .alarm(true)
                 .build();
 
-        Long userId = userRepository.save(entity).getId();
+        Long userId = userRepository.save(entity).getUserId();
 
         // 토큰 사용 처리
         SignupVerificationToken token = tokenOpt.get();
@@ -184,7 +186,7 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         // 회원 정보 수정
         entity.updateUser(dto);
 
-        return userRepository.save(entity).getId();
+        return userRepository.save(entity).getUserId();
     }
 
     // 현재 비밀번호 확인 후 새 비밀번호로 변경
@@ -302,6 +304,7 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
                     .roleType(UserRoleType.USER)
                     .nickname(nickname)
                     .email(email)
+                    .alarm(true)
                     .build();
 
             userRepository.save(newUserEntity);
