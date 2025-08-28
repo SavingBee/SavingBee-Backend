@@ -1,11 +1,15 @@
 package com.project.savingbee.filtering.service;
 
 import com.project.savingbee.common.entity.DepositProducts;
+import com.project.savingbee.common.entity.FinancialCompanies;
 import com.project.savingbee.common.repository.DepositProductsRepository;
+import com.project.savingbee.common.repository.FinancialCompaniesRepository;
 import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.dto.RangeFilter;
 import com.project.savingbee.filtering.enums.PreConMapping;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +35,8 @@ import java.util.stream.Collectors;
 public class DepositFilterService extends BaseFilterService<DepositProducts, DepositFilterRequest> {
 
   private final DepositProductsRepository depositProductsRepository;
+
+  private final FinancialCompaniesRepository financialCompaniesRepository;
 
   /**
    * 예금 필터링 필터링 조건
@@ -70,8 +76,19 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
 
     // 1. 필터링 조건만 적용하여 모든 데이터 조회 - 정렬 없이
     Specification<DepositProducts> spec = buildFilterSpecification(request);
-    List<DepositProducts> allProducts = depositProductsRepository.findAll(spec);
+//    List<DepositProducts> allProducts = depositProductsRepository.findAll(spec);
 
+    List<DepositProducts> allProducts = depositProductsRepository.findAll((root, query, cb) -> {
+      root.fetch("interestRates", JoinType.LEFT);
+      root.fetch("financialCompany", JoinType.LEFT);
+      return spec.toPredicate(root, query, cb);
+    });
+
+    allProducts.forEach(product -> {
+      if (product.getInterestRates() != null) {
+        product.getInterestRates().size(); // lazy loading 강제 실행
+      }
+    });
     // 2. 중복 제거
     List<DepositProducts> distinctProducts = removeDuplicates(allProducts);
 
@@ -142,8 +159,8 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
     DepositFilterRequest.Filters filters = request.getFilters();
 
     // 금융회사 번호 필터
-    if (filters.getFinCoNo() != null && !filters.getFinCoNo().isEmpty()) {
-      spec = spec.and(filterFinCoNum(filters.getFinCoNo()));
+    if (filters.getOrgTypeCode() != null && !filters.getOrgTypeCode().isEmpty()) {
+      spec = spec.and(filterFinCoNum(filters.getOrgTypeCode()));
     }
 
     // 가입제한 필터
@@ -234,14 +251,27 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
    * 활성상품인지 확인
    */
   private Specification<DepositProducts> isActiveProduct() {
-    return (root, query, cb) -> cb.equal(root.get("isActive"), true);
+//    return (root, query, cb) -> cb.equal(root.get("isActive"), true);
+    return (root, query, cb) -> {
+      if (root == null) {
+        return cb.conjunction(); // root가 없으면 무조건 true
+      }
+      return cb.equal(root.get("isActive"), true);
+    };
   }
 
   /**
    * 금융회사 번호 필터
    */
-  private Specification<DepositProducts> filterFinCoNum(List<String> finCoNumbers) {
-    return (root, query, cb) -> root.get("finCoNo").in(finCoNumbers);
+  private Specification<DepositProducts> filterFinCoNum(List<String> getOrgTypeCode) {
+    return (root, query, cb) -> {
+      Subquery<String> subquery = query.subquery(String.class);
+      Root<FinancialCompanies> fcRoot = subquery.from(FinancialCompanies.class);
+      subquery.select(fcRoot.get("finCoNo"))
+          .where(fcRoot.get("orgTypeCode").in(getOrgTypeCode));
+
+      return root.get("finCoNo").in(subquery);
+    };
   }
 
   /**
@@ -443,5 +473,21 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
   @Override
   protected String getProductCode(DepositProducts product) {
     return product.getFinPrdtCd();
+  }
+
+  // 필터링 로직 구현 헬퍼 메서드
+  private boolean matchesSpecification(DepositProducts product, DepositFilterRequest request) {
+    DepositFilterRequest.Filters filters = request.getFilters();
+
+    // orgTypeCode 필터링
+    if (filters.getOrgTypeCode() != null && !filters.getOrgTypeCode().isEmpty()) {
+      boolean found = financialCompaniesRepository.findById(product.getFinCoNo())
+          .map(fc -> filters.getOrgTypeCode().contains(fc.getOrgTypeCode()))
+          .orElse(false);
+      if (!found) return false;
+    }
+
+    // 다른 필터들도 동일하게 구현...
+    return true;
   }
 }

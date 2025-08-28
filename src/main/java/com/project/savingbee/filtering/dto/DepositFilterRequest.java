@@ -21,7 +21,7 @@ public class DepositFilterRequest extends BaseFilterRequest {
   @AllArgsConstructor
   public static class Filters {
 
-    private List<String> finCoNo;           // 금융회사 번호들
+    private List<String> orgTypeCode;           // 금융회사 번호들
     private List<String> joinWay;           // 우대조건들
     private List<String> joinDeny;          // 가입제한
     private List<Integer> saveTrm;          // 저축기간

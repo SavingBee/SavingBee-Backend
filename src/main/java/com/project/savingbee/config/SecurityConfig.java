@@ -91,7 +91,7 @@ public class SecurityConfig {
     @Order(1)
     SecurityFilterChain publicApis(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/compare", "/api/compare/**")
+            .securityMatcher("/api/compare", "/api/compare/**","/products/**")
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(a -> a.anyRequest().permitAll());
         return http.build();
