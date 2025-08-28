@@ -26,6 +26,7 @@ public class CompareExecuteRequestDto {
   private Integer termMonth;  // 예치 기간
 
   @Getter
+  @Setter
   public static class Selection {
     @NotNull
     private String productId; // 상품코드
