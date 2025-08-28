@@ -3,8 +3,10 @@ package com.project.savingbee.filtering.service;
 import com.project.savingbee.common.entity.FinancialCompanies;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
+import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.filtering.dto.*;
 import com.project.savingbee.filtering.enums.PreConMapping;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -29,16 +31,8 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   private final SavingsProductsRepository savingsProductsRepository;
 
   /**
-   * 적금 필터링
-   * 금융권역 - 은행, 저축은행, 신협조합
-   * 우대조건 - 비대면 가입, 재예치, 첫거래, 연령, 실적
-   * 가입대상 - 제한 없음, 서민전용, 일부 제한
-   * 저축기간 - 6개월, 12개월, 24개월, 36개월
-   * 이자계산 방식 - 단리, 복리
-   * 적립방식 - 정액적립식, 자유적립식,전체
-   * 월 저축금
-   * 총 저축금
-   * 기본 금리 - 최저값, 최고값 최고
+   * 적금 필터링 금융권역 - 은행, 저축은행, 신협조합 우대조건 - 비대면 가입, 재예치, 첫거래, 연령, 실적 가입대상 - 제한 없음, 서민전용, 일부 제한 저축기간 -
+   * 6개월, 12개월, 24개월, 36개월 이자계산 방식 - 단리, 복리 적립방식 - 정액적립식, 자유적립식,전체 월 저축금 총 저축금 기본 금리 - 최저값, 최고값 최고
    * 금리 - 최저값, 최고값
    */
 
@@ -69,7 +63,19 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   private Page<ProductSummaryResponse> filterWithRateSort(SavingFilterRequest request) {
     // 필터링 조건만 적용하여 모든 데이터 조회
     Specification<SavingsProducts> spec = buildFilterSpecification(request);
-    List<SavingsProducts> allProducts = savingsProductsRepository.findAll(spec);
+
+    List<SavingsProducts> allProducts = savingsProductsRepository.findAll((root, query, cb) -> {
+      root.fetch("interestRates", JoinType.LEFT);
+      root.fetch("financialCompany", JoinType.LEFT);
+      return spec.toPredicate(root, query, cb);
+    });
+
+    allProducts.forEach(product -> {
+      if (product.getInterestRates() != null) {
+        product.getInterestRates().size(); // lazy loading 강제 실행
+      }
+    });
+
     // 중복 제거
     List<SavingsProducts> distinctProducts = removeDuplicates(allProducts);
     // 서비스 레벨에서 금리 기준 정렬
@@ -101,10 +107,18 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   private Page<ProductSummaryResponse> filterWithBasicSort(SavingFilterRequest request) {
     // 페이징 조건 생성
     Specification<SavingsProducts> spec = buildFilterSpecification(request);
+
     // 페이징 및 정렬 설정
     Pageable pageable = createPageableForDbSort(request);
+
     // 쿼리 실행
-    Page<SavingsProducts> products = savingsProductsRepository.findAll(spec, pageable);
+    // FETCH JOIN으로 쿼리 실행
+    Page<SavingsProducts> products = savingsProductsRepository.findAll((root, query, cb) -> {
+      root.fetch("interestRates", JoinType.LEFT);
+      root.fetch("financialCompany", JoinType.LEFT);
+      return spec.toPredicate(root, query, cb);
+    }, pageable);
+
     // 중복 제거
     Page<SavingsProducts> distinctProducts = removeDuplicatesFromPage(products);
 
@@ -222,13 +236,18 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
    * 활성 상품 확인
    */
   private Specification<SavingsProducts> isActiveProduct() {
-    return (root, query, cb) -> cb.equal(root.get("isActive"), true);
+    return (root, query, cb) -> {
+      if (root == null) {
+        return cb.conjunction(); // root가 없으면 무조건 true
+      }
+      return cb.equal(root.get("isActive"), true);
+    };
   }
 
   /**
    * 금융회사 번호 필터
    */
-  private Specification<SavingsProducts> filterFinCoNum(List<String> orgTypeCode){
+  private Specification<SavingsProducts> filterFinCoNum(List<String> orgTypeCode) {
     return (root, query, cb) -> {
       Subquery<String> subquery = query.subquery(String.class);
       Root<FinancialCompanies> fcRoot = subquery.from(FinancialCompanies.class);
@@ -265,9 +284,11 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
     return (root, query, cb) -> {
       // 금리 조건 적용
       var interestRatesJoin = root.join("interestRates", JoinType.LEFT);
-      return conditionInterestRate(filters, root, interestRatesJoin, cb);
+      // query를 conditionInterestRate에 전달하도록 시그니처 변경
+      return conditionInterestRate(filters, root, interestRatesJoin, cb, query);
     };
   }
+
 
   /**
    * 금리, 저축 기간, 총 저축금 조건
@@ -275,7 +296,8 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
   private Predicate conditionInterestRate(SavingFilterRequest.Filters filters,
       jakarta.persistence.criteria.Root<?> root,
       jakarta.persistence.criteria.Join<?, ?> interestRatesJoin,
-      jakarta.persistence.criteria.CriteriaBuilder cb) {
+      jakarta.persistence.criteria.CriteriaBuilder cb,
+      jakarta.persistence.criteria.CriteriaQuery<?> query){
     List<Predicate> predicates = new ArrayList<>();
 
     // 저축기간 조건
@@ -319,32 +341,46 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
 
     // 총 저축금 조건
     if (filters.getTotalMaxLimit() != null) {
+      BigDecimal totalMaxLimitValue = new BigDecimal(filters.getTotalMaxLimit());
+
       if (filters.getSaveTrm() != null && !filters.getSaveTrm().isEmpty()) {
-        // 1. 저축기간을 입력한 경우: 입력된 기간들에 대해 계산
-        List<Predicate> totalPredicates = new ArrayList<>(); // 사용자가 선택한 기간들 리스트
+        // 1. 저축기간을 입력한 경우: (기존) "해당 기간 옵션 존재"는 이미 아래 상단에서
+        // interestRatesJoin.get("saveTrm").in(filters.getSaveTrm()) 로 처리되어 있으므로,
+        // 여기서는 maxLimit * period 계산만으로 총저축금 여부를 검사한다.
+        List<Predicate> totalPredicates = new ArrayList<>();
         for (Integer period : filters.getSaveTrm()) {
-          var calculatedTotal = cb.prod(
-              cb.coalesce(root.get("maxLimit"), Integer.MAX_VALUE), // 해당 기간의 월 최대 한도
-              period
-          );
-          totalPredicates.add(cb.and(
-              cb.equal(interestRatesJoin.get("saveTrm"), period),
-              cb.greaterThanOrEqualTo(calculatedTotal, filters.getTotalMaxLimit())
-          ));
+          // 계산식: maxLimit * period
+          Expression<BigDecimal> calculatedTotalExpr = cb.prod(
+              cb.coalesce(root.get("maxLimit"), cb.literal(new BigDecimal(Integer.MAX_VALUE))),
+              cb.literal(new BigDecimal(period))
+          ).as(BigDecimal.class);
+
+          totalPredicates.add(cb.greaterThanOrEqualTo(calculatedTotalExpr, totalMaxLimitValue));
         }
+
         predicates.add(cb.or(
             cb.isNull(root.get("maxLimit")), // 제한없음
             cb.or(totalPredicates.toArray(new Predicate[0]))
         ));
       } else {
-        // 2. 저축기간 미입력: 현재 JOIN된 기간으로 계산
-        var calculatedTotal = cb.prod(  // 해당 상품에서 최대 기간으로 최대 한도 계산
-            cb.coalesce(root.get("maxLimit"), Integer.MAX_VALUE),
-            interestRatesJoin.get("saveTrm")
-        );
+        // 2. 저축기간 미입력: 각 상품의 "최대 saveTrm"을 서브쿼리로 구해 총저축금 계산 (기존 로직 유지)
+        Subquery<Integer> maxTrmSubquery = query.subquery(Integer.class);
+        Root<SavingsInterestRates> rateRoot = maxTrmSubquery.from(SavingsInterestRates.class);
+
+        // 해당 상품(finPrdtCd)의 최대 saveTrm
+        Expression<Integer> maxSaveTrmExpr = cb.max(rateRoot.get("saveTrm")).as(Integer.class);
+        maxTrmSubquery.select(maxSaveTrmExpr)
+            .where(cb.equal(rateRoot.get("finPrdtCd"), root.get("finPrdtCd")));
+
+        // 총저축금 = maxLimit * maxSaveTrm
+        Expression<BigDecimal> calculatedTotalExpr = cb.prod(
+            cb.coalesce(root.get("maxLimit"), cb.literal(new BigDecimal(Integer.MAX_VALUE))),
+            maxTrmSubquery.getSelection()
+        ).as(BigDecimal.class);
+
         predicates.add(cb.or(
-            cb.isNull(root.get("maxLimit")), // 제한없음
-            cb.greaterThanOrEqualTo(calculatedTotal, filters.getTotalMaxLimit())
+            cb.isNull(root.get("maxLimit")),
+            cb.greaterThanOrEqualTo(calculatedTotalExpr, totalMaxLimitValue)
         ));
       }
     }
@@ -360,7 +396,8 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
     return (root, query, cb) -> {
       return cb.or(
           cb.isNull(root.get("maxLimit")),  // 제한없음인 상품 - maxLimit이 null
-          cb.greaterThanOrEqualTo(root.get("maxLimit"), monthlyLimit)  // 월 저축금이 요청금액 이상인 상품
+          cb.greaterThanOrEqualTo(root.get("maxLimit"), new BigDecimal(monthlyLimit))
+          // 월 저축금이 요청금액 이상인 상품
       );
     };
   }

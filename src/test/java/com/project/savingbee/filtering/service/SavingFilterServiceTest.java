@@ -12,6 +12,7 @@ import com.project.savingbee.filtering.dto.SavingFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.dto.RangeFilter;
 import com.project.savingbee.filtering.dto.SortFilter;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -31,8 +33,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @SpringBootTest
-@Transactional
 @ActiveProfiles("test")
 @DisplayName("적금 필터 서비스 통합 테스트")
 public class SavingFilterServiceTest {
@@ -59,6 +61,11 @@ public class SavingFilterServiceTest {
     savingsProductsRepository.deleteAll();
     financialCompaniesRepository.deleteAll();
 
+    // 별도 트랜잭션으로 저장
+    saveFinancialCompaniesInSeparateTransaction();
+    saveSavingsProductsInSeparateTransaction();
+    saveSavingsInterestRatesInSeparateTransaction();
+
     // 금융회사 생성
     FinancialCompanies wooriBank = financialCompaniesRepository.save(
         FinancialCompanies.builder()
@@ -79,8 +86,8 @@ public class SavingFilterServiceTest {
     FinancialCompanies shinhanBank = financialCompaniesRepository.save(
         FinancialCompanies.builder()
             .finCoNo("0010003")
-            .korCoNm("신한은행")
-            .orgTypeCode("020000")
+            .korCoNm("신한저축은행")
+            .orgTypeCode("030000")
             .build()
     );
 
@@ -88,7 +95,7 @@ public class SavingFilterServiceTest {
     SavingsProducts highRateProduct = savingsProductsRepository.save(
         SavingsProducts.builder()
             .finPrdtCd("HIGH_RATE_001")
-            .finPrdtNm("고금리특별예금")
+            .finPrdtNm("고금리특별적금")
             .finCoNo("0010001")
             .joinWay("영업점,인터넷,스마트폰")
             .spclCnd("신규고객 우대")
@@ -103,13 +110,13 @@ public class SavingFilterServiceTest {
     SavingsProducts mediumRateProduct = savingsProductsRepository.save(
         SavingsProducts.builder()
             .finPrdtCd("MEDIUM_RATE_001")
-            .finPrdtNm("안정금리예금")
+            .finPrdtNm("안정금리적금")
             .finCoNo("0010002")
             .joinWay("영업점")
             .spclCnd("일반고객 대상")
             .joinDeny("1")
             .joinMember("개인")
-            .maxLimit(new BigDecimal("50000000"))
+            .maxLimit(new BigDecimal("500000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
             .build()
@@ -118,13 +125,13 @@ public class SavingFilterServiceTest {
     SavingsProducts lowRateProduct = savingsProductsRepository.save(
         SavingsProducts.builder()
             .finPrdtCd("LOW_RATE_001")
-            .finPrdtNm("기본예금")
+            .finPrdtNm("기본적금")
             .finCoNo("0010003")
             .joinWay("영업점,인터넷")
             .spclCnd("제한없음")
             .joinDeny("1")
             .joinMember("개인")
-            .maxLimit(new BigDecimal("30000000"))
+            .maxLimit(new BigDecimal("300000"))
             .isActive(true)
             .dclsStrtDay(LocalDate.now())
             .build()
@@ -137,16 +144,19 @@ public class SavingFilterServiceTest {
             SavingsInterestRates.builder()
                 .finPrdtCd("HIGH_RATE_001")
                 .intrRateType("S").saveTrm(12)
+                .rsrvType("S")
                 .intrRate(new BigDecimal("3.50")).intrRate2(new BigDecimal("4.00"))
                 .build(),
             SavingsInterestRates.builder()
                 .finPrdtCd("HIGH_RATE_001")
                 .intrRateType("S").saveTrm(24)
+                .rsrvType("S")
                 .intrRate(new BigDecimal("3.70")).intrRate2(new BigDecimal("4.20"))
                 .build(),
             SavingsInterestRates.builder()
                 .finPrdtCd("HIGH_RATE_001")
                 .intrRateType("M").saveTrm(12)
+                .rsrvType("S")
                 .intrRate(new BigDecimal("3.45")).intrRate2(new BigDecimal("3.95"))
                 .build(),
 
@@ -154,11 +164,13 @@ public class SavingFilterServiceTest {
             SavingsInterestRates.builder()
                 .finPrdtCd("MEDIUM_RATE_001")
                 .intrRateType("S").saveTrm(12)
+                .rsrvType("S")
                 .intrRate(new BigDecimal("2.50")).intrRate2(new BigDecimal("2.80"))
                 .build(),
             SavingsInterestRates.builder()
                 .finPrdtCd("MEDIUM_RATE_001")
                 .intrRateType("S").saveTrm(24)
+                .rsrvType("S")
                 .intrRate(new BigDecimal("2.60")).intrRate2(new BigDecimal("2.90"))
                 .build(),
 
@@ -166,6 +178,7 @@ public class SavingFilterServiceTest {
             SavingsInterestRates.builder()
                 .finPrdtCd("LOW_RATE_001")
                 .intrRateType("S").saveTrm(12)
+                .rsrvType("F")
                 .intrRate(new BigDecimal("1.50")).intrRate2(new BigDecimal("1.80"))
                 .build()
         )
@@ -192,13 +205,13 @@ public class SavingFilterServiceTest {
 
     // 최고 금리 내림차순 기본 정렬
     List<ProductSummaryResponse> products = result.getContent();
-    assertThat(products.get(0).getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(products.get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
     assertThat(products.get(0).getMaxIntrRate()).isEqualTo(new BigDecimal("4.20"));
 
-    assertThat(products.get(1).getFinPrdtCd()).isEqualTo("SAVING_MEDIUM_001");
+    assertThat(products.get(1).getFinPrdtCd()).isEqualTo("MEDIUM_RATE_001");
     assertThat(products.get(1).getMaxIntrRate()).isEqualTo(new BigDecimal("2.90"));
 
-    assertThat(products.get(2).getFinPrdtCd()).isEqualTo("SAVING_FREE_001");
+    assertThat(products.get(2).getFinPrdtCd()).isEqualTo("LOW_RATE_001");
     assertThat(products.get(2).getMaxIntrRate()).isEqualTo(new BigDecimal("1.80"));
   }
 
@@ -250,7 +263,7 @@ public class SavingFilterServiceTest {
     List<String> productCodes = result.getContent().stream()
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
-    assertThat(productCodes).containsExactlyInAnyOrder("SAVING_HIGH_001", "SAVING_MEDIUM_001");
+    assertThat(productCodes).containsExactlyInAnyOrder("HIGH_RATE_001", "MEDIUM_RATE_001");
   }
 
   @Test
@@ -272,7 +285,7 @@ public class SavingFilterServiceTest {
     assertThat(result).isNotNull();
     // 자유적립식 옵션이 있는 상품만
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_FREE_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("LOW_RATE_001");
   }
 
   @Test
@@ -294,7 +307,7 @@ public class SavingFilterServiceTest {
     assertThat(result).isNotNull();
     // 복리 옵션이 있는 상품만
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
 
   @Test
@@ -316,7 +329,7 @@ public class SavingFilterServiceTest {
     assertThat(result).isNotNull();
     // 월 60만원 이상 저축 가능한 상품만 (100만원 한도 상품만)
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
 
   @Test
@@ -341,7 +354,7 @@ public class SavingFilterServiceTest {
     // 고금리상품: 100만원 × 24개월 = 2,400만원 (가능)
     // 중간금리상품: 50만원 × 24개월 = 1,200만원 (불가능)
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
 
   @Test
@@ -387,7 +400,7 @@ public class SavingFilterServiceTest {
     assertThat(result).isNotNull();
     // 기본금리가 해당 범위에 속하는 상품만
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_MEDIUM_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("MEDIUM_RATE_001");
   }
 
   @Test
@@ -408,7 +421,7 @@ public class SavingFilterServiceTest {
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
   }
 
   @Test
@@ -436,7 +449,7 @@ public class SavingFilterServiceTest {
     assertThat(result).isNotNull();
     // 모든 조건을 만족하는 상품만
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(result.getContent().get(0).getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
     assertThat(result.getContent().get(0).getKorCoNm()).isEqualTo("우리은행");
   }
 
@@ -499,8 +512,7 @@ public class SavingFilterServiceTest {
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
 
-    assertThat(productCodes).containsExactly("SAVING_HIGH_001", "SAVING_MEDIUM_001",
-        "SAVING_FREE_001");
+    assertThat(productCodes).containsExactly("HIGH_RATE_001", "MEDIUM_RATE_001", "LOW_RATE_001");
 
     List<BigDecimal> maxRates = result.getContent().stream()
         .map(ProductSummaryResponse::getMaxIntrRate)
@@ -539,8 +551,7 @@ public class SavingFilterServiceTest {
         .map(ProductSummaryResponse::getFinPrdtCd)
         .toList();
 
-    assertThat(productCodes).containsExactly("SAVING_FREE_001", "SAVING_MEDIUM_001",
-        "SAVING_HIGH_001");
+    assertThat(productCodes).containsExactly("LOW_RATE_001", "MEDIUM_RATE_001", "HIGH_RATE_001");
   }
 
   @Test
@@ -571,7 +582,8 @@ public class SavingFilterServiceTest {
 
     // 정렬 순서가 올바른지 확인
     assertThat(productNames.get(0)).isEqualTo("고금리특별적금");
-    assertThat(productNames.get(2)).isEqualTo("자유적립식적금");
+    assertThat(productNames.get(1)).isEqualTo("기본적금");
+    assertThat(productNames.get(2)).isEqualTo("안정금리적금");
   }
 
   @Test
@@ -614,7 +626,7 @@ public class SavingFilterServiceTest {
     assertThat(result.getContent()).hasSize(1);
 
     ProductSummaryResponse response = result.getContent().get(0);
-    assertThat(response.getFinPrdtCd()).isEqualTo("SAVING_HIGH_001");
+    assertThat(response.getFinPrdtCd()).isEqualTo("HIGH_RATE_001");
     assertThat(response.getFinPrdtNm()).isEqualTo("고금리특별적금");
     assertThat(response.getKorCoNm()).isEqualTo("우리은행");
     assertThat(response.getProductType()).isEqualTo("saving");
@@ -629,5 +641,133 @@ public class SavingFilterServiceTest {
     assertThatThrownBy(() -> savingFilterService.savingFilter(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("필터링 요청이 null입니다.");
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  private void saveFinancialCompaniesInSeparateTransaction() {
+    financialCompaniesRepository.saveAll(Arrays.asList(
+        FinancialCompanies.builder()
+            .finCoNo("0010001")
+            .korCoNm("우리은행")
+            .orgTypeCode("020000")
+            .build(),
+        FinancialCompanies.builder()
+            .finCoNo("0010002")
+            .korCoNm("국민은행")
+            .orgTypeCode("020000")
+            .build(),
+        FinancialCompanies.builder()
+            .finCoNo("0010003")
+            .korCoNm("신한저축은행")
+            .orgTypeCode("030000")
+            .build()
+    ));
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  private void saveSavingsProductsInSeparateTransaction() {
+    savingsProductsRepository.saveAll(Arrays.asList(
+        SavingsProducts.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .finPrdtNm("고금리특별적금")  // 적금으로 수정
+            .finCoNo("0010001")  // finCoNo만 설정, financialCompany 연관관계 설정 안함
+            .joinWay("영업점,인터넷,스마트폰")
+            .spclCnd("신규고객 우대")
+            .joinDeny("1")
+            .joinMember("개인")
+            .maxLimit(new BigDecimal("1000000"))  // 적금은 월 한도 (100만원)
+            .isActive(true)
+            .dclsStrtDay(LocalDate.now())
+            .build(),
+        SavingsProducts.builder()
+            .finPrdtCd("MEDIUM_RATE_001")
+            .finPrdtNm("안정금리적금")  // 적금으로 수정
+            .finCoNo("0010002")
+            .joinWay("영업점")
+            .spclCnd("일반고객 대상")
+            .joinDeny("1")
+            .joinMember("개인")
+            .maxLimit(new BigDecimal("500000"))  // 적금은 월 한도 (50만원)
+            .isActive(true)
+            .dclsStrtDay(LocalDate.now())
+            .build(),
+        SavingsProducts.builder()
+            .finPrdtCd("LOW_RATE_001")
+            .finPrdtNm("기본적금")  // 적금으로 수정
+            .finCoNo("0010003")
+            .joinWay("영업점,인터넷")
+            .spclCnd("제한없음")
+            .joinDeny("1")
+            .joinMember("개인")
+            .maxLimit(new BigDecimal("300000"))  // 적금은 월 한도 (30만원)
+            .isActive(true)
+            .dclsStrtDay(LocalDate.now())
+            .build()
+    ));
+
+    List<SavingsProducts> savedProducts = savingsProductsRepository.findAll();
+    for (SavingsProducts product : savedProducts) {
+      log.info("상품: {}, maxLimit: {}", product.getFinPrdtCd(), product.getMaxLimit());
+    }
+
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  private void saveSavingsInterestRatesInSeparateTransaction() {
+    savingsInterestRatesRepository.saveAll(Arrays.asList(
+        // 고금리 상품 금리 (정액적립식)
+        SavingsInterestRates.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .intrRateType("S")
+            .rsrvType("S")  // 정액적립식
+            .saveTrm(12)
+            .intrRate(new BigDecimal("3.50"))
+            .intrRate2(new BigDecimal("4.00"))
+            .build(),
+        SavingsInterestRates.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .intrRateType("S")
+            .rsrvType("S")  // 정액적립식
+            .saveTrm(24)
+            .intrRate(new BigDecimal("3.70"))
+            .intrRate2(new BigDecimal("4.20"))
+            .build(),
+        SavingsInterestRates.builder()
+            .finPrdtCd("HIGH_RATE_001")
+            .intrRateType("M")
+            .rsrvType("S")  // 정액적립식
+            .saveTrm(12)
+            .intrRate(new BigDecimal("3.45"))
+            .intrRate2(new BigDecimal("3.95"))
+            .build(),
+
+        // 중간금리 상품 금리 (정액적립식)
+        SavingsInterestRates.builder()
+            .finPrdtCd("MEDIUM_RATE_001")
+            .intrRateType("S")
+            .rsrvType("S")  // 정액적립식
+            .saveTrm(12)
+            .intrRate(new BigDecimal("2.50"))
+            .intrRate2(new BigDecimal("2.80"))
+            .build(),
+        SavingsInterestRates.builder()
+            .finPrdtCd("MEDIUM_RATE_001")
+            .intrRateType("S")
+            .rsrvType("S")  // 정액적립식
+            .saveTrm(24)
+            .intrRate(new BigDecimal("2.60"))
+            .intrRate2(new BigDecimal("2.90"))
+            .build(),
+
+        // 낮은금리 상품 금리 (자유적립식)
+        SavingsInterestRates.builder()
+            .finPrdtCd("LOW_RATE_001")
+            .intrRateType("S")
+            .rsrvType("F")  // 자유적립식
+            .saveTrm(12)
+            .intrRate(new BigDecimal("1.50"))
+            .intrRate2(new BigDecimal("1.80"))
+            .build()
+    ));
   }
 }

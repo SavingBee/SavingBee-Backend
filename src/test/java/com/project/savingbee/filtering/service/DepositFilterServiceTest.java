@@ -95,7 +95,7 @@ class DepositFilterServiceTest {
             .build(),
         FinancialCompanies.builder()
             .finCoNo("0010003")
-            .korCoNm("신한은행")
+            .korCoNm("신한저축은행")
             .orgTypeCode("030000")
             .build()
     ));
@@ -243,12 +243,12 @@ class DepositFilterServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    assertThat(result.getContent()).hasSize(3);
+    assertThat(result.getContent()).hasSize(2);
 
     List<String> companyNames = result.getContent().stream()
         .map(ProductSummaryResponse::getKorCoNm)
         .toList();
-    assertThat(companyNames).containsExactlyInAnyOrder("우리은행", "국민은행", "신한은행");
+    assertThat(companyNames).containsExactlyInAnyOrder("우리은행", "국민은행");
   }
 
   @Test
