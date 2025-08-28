@@ -9,20 +9,17 @@ import java.time.LocalDateTime;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "password_reset_tokens")
+@Table(name = "find_username_verification_tokens")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PasswordResetToken {
+public class FindUsernameVerificationToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "username", nullable = false)
-    private String username;
 
     @Column(name = "email", nullable = false)
     private String email;
@@ -43,5 +40,9 @@ public class PasswordResetToken {
     private LocalDateTime createdAt;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt; // 만료 시간 (5분)
+    private LocalDateTime expiresAt; // 만료 시간 (10분)
+
+    // 조회된 사용자 정보 임시 저장
+    @Column(name = "found_username")
+    private String foundUsername; // 찾은 아이디
 }

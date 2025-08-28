@@ -100,6 +100,41 @@ public class EmailService {
         }
     }
 
+    public void sendFindUsernameVerificationCodeEmail(String toEmail, String verificationCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("[SavingBee] 아이디 찾기 이메일 인증 코드");
+            message.setText("안녕하세요.\n\n아이디 찾기를 위한 이메일 인증 코드입니다.\n\n" +
+                          "인증 코드: " + verificationCode + "\n\n" +
+                          "인증 코드는 10분간 유효합니다.\n\n감사합니다.\nSavingBee 팀");
+            
+            mailSender.send(message);
+            log.info("아이디 찾기 인증 코드 이메일 발송 완료: {}", toEmail);
+        } catch (Exception e) {
+            log.error("아이디 찾기 인증 코드 이메일 발송 실패: {}", toEmail, e);
+            throw new RuntimeException("이메일 발송에 실패했습니다.");
+        }
+    }
+
+    public void sendFindPasswordVerificationCodeEmail(String toEmail, String username, String verificationCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("[SavingBee] 비밀번호 찾기 이메일 인증 코드");
+            message.setText("안녕하세요.\n\n비밀번호 찾기를 위한 이메일 인증 코드입니다.\n\n" +
+                          "아이디: " + username + "\n" +
+                          "인증 코드: " + verificationCode + "\n\n" +
+                          "인증 코드는 10분간 유효합니다.\n\n감사합니다.\nSavingBee 팀");
+            
+            mailSender.send(message);
+            log.info("비밀번호 찾기 인증 코드 이메일 발송 완료: {}", toEmail);
+        } catch (Exception e) {
+            log.error("비밀번호 찾기 인증 코드 이메일 발송 실패: {}", toEmail, e);
+            throw new RuntimeException("이메일 발송에 실패했습니다.");
+        }
+    }
+
     public void sendMaturityNotificationEmail(String toEmail, String username, String subject, String content) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();

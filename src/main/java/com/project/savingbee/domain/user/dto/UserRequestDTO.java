@@ -26,18 +26,28 @@ public class UserRequestDTO {
     public interface signupEmailVerifyGroup {} // 회원가입 이메일 인증 코드 발송
     public interface signupVerifyCodeGroup {} // 회원가입 인증 코드 확인
     public interface signupCompleteGroup {} // 회원가입 완료
+    
+    // 아이디 찾기 이메일 인증 관련 추가
+    public interface findUsernameEmailVerifyGroup {} // 아이디 찾기 이메일 인증 코드 발송
+    public interface findUsernameVerifyCodeGroup {} // 아이디 찾기 인증 코드 확인
+    
+    // 비밀번호 찾기 이메일 인증 관련 추가
+    public interface findPasswordEmailVerifyGroup {} // 비밀번호 찾기 이메일 인증 코드 발송
+    public interface findPasswordVerifyCodeGroup {} // 비밀번호 찾기 인증 코드 확인
+    public interface resetPasswordCompleteGroup {} // 비밀번호 재설정 완료
 
     @NotBlank(groups = {existGroup.class, addGroup.class, updateGroup.class, deleteGroup.class, 
                        resetPasswordGroup.class, findPasswordGroup.class, verifyCodeGroup.class, 
-                       newPasswordGroup.class, signupCompleteGroup.class, changePasswordGroup.class}) 
+                       newPasswordGroup.class, signupCompleteGroup.class, changePasswordGroup.class,
+                       findPasswordEmailVerifyGroup.class, findPasswordVerifyCodeGroup.class}) 
     @Size(min = 4)
     private String username;
     
-    @NotBlank(groups = {addGroup.class, passwordGroup.class, newPasswordGroup.class, signupCompleteGroup.class, changePasswordGroup.class}) 
+    @NotBlank(groups = {addGroup.class, passwordGroup.class, newPasswordGroup.class, signupCompleteGroup.class, changePasswordGroup.class, resetPasswordCompleteGroup.class}) 
     @Size(min = 4)
     private String password;
     
-    @NotBlank(groups = {addGroup.class, newPasswordGroup.class, signupCompleteGroup.class, changePasswordGroup.class}) 
+    @NotBlank(groups = {addGroup.class, newPasswordGroup.class, signupCompleteGroup.class, changePasswordGroup.class, resetPasswordCompleteGroup.class}) 
     @Size(min = 4)
     private String passwordConfirm; // 비밀번호 확인
     
@@ -46,16 +56,19 @@ public class UserRequestDTO {
     private String currentPassword; // 현재 비밀번호 (비밀번호 변경시 사용)
     
     // updateGroup에서는 선택적으로 변경 가능하도록 수정
-    @NotBlank(groups = {addGroup.class, signupEmailVerifyGroup.class, signupCompleteGroup.class})
+    @NotBlank(groups = {addGroup.class, signupCompleteGroup.class})
     private String nickname;
     
     @Email(groups = {addGroup.class, updateGroup.class, findUsernameGroup.class, 
-                    resetPasswordGroup.class, findPasswordGroup.class, signupEmailVerifyGroup.class})
+                    resetPasswordGroup.class, findPasswordGroup.class, signupEmailVerifyGroup.class, 
+                    signupCompleteGroup.class, signupVerifyCodeGroup.class, findUsernameEmailVerifyGroup.class,
+                    findUsernameVerifyCodeGroup.class, findPasswordEmailVerifyGroup.class})
     @NotBlank(groups = {findUsernameGroup.class, resetPasswordGroup.class, findPasswordGroup.class, 
-                       signupEmailVerifyGroup.class})
+                       signupEmailVerifyGroup.class, signupCompleteGroup.class, signupVerifyCodeGroup.class,
+                       findUsernameEmailVerifyGroup.class, findUsernameVerifyCodeGroup.class, findPasswordEmailVerifyGroup.class})
     private String email;
     
-    @NotBlank(groups = {verifyCodeGroup.class, signupVerifyCodeGroup.class}) 
+    @NotBlank(groups = {verifyCodeGroup.class, signupVerifyCodeGroup.class, findUsernameVerifyCodeGroup.class, findPasswordVerifyCodeGroup.class}) 
     @Size(min = 6, max = 6)
     private String verificationCode; // 인증 코드
 }
