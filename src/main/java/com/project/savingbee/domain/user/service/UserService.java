@@ -479,12 +479,12 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
 
         // 토큰 생성 (10분 후 만료)
         SignupVerificationToken token = SignupVerificationToken.builder()
-            .email(dto.getEmail())
+            .email(dto.getEmail()) // 이메일
             .verificationCode(verificationCode)
             .expiresAt(LocalDateTime.now().plusMinutes(10))
-            .tempUsername(dto.getUsername())
-            .tempPassword(passwordEncoder.encode(dto.getPassword()))
-            .tempNickname(dto.getNickname())
+            .tempUsername(dto.getUsername()) //사용자명 임시 저장
+            .tempPassword(passwordEncoder.encode(dto.getPassword())) // 비밀번호 암호화 저장
+            .tempNickname(dto.getNickname()) // 닉네임 임시저장
             .build();
 
         signupVerificationTokenRepository.save(token);
