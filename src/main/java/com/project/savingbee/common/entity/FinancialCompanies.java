@@ -37,7 +37,4 @@ public class FinancialCompanies {
 
   @OneToMany(mappedBy = "financialCompany", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private List<SavingsProducts> savingsProducts; // 적금 상품들
-
-  @OneToMany(mappedBy = "financialCompany", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-  private List<Branches> branches; // 지점들
 }
