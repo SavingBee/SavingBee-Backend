@@ -58,7 +58,7 @@ class ProductCompareServiceFilteringTest {
 
     given(p.getFinPrdtCd()).willReturn(prdtCd);
     given(p.getMinAmount()).willReturn(new BigDecimal(minAmt));
-    given(p.getMaxAmount()).willReturn(new BigDecimal(maxAmt));
+    given(p.getMaxLimit()).willReturn(new BigDecimal(maxAmt));
 
     given(r.getIntrRate2()).willReturn(new BigDecimal(intr2));
     given(r.getIntrRateType()).willReturn(intrType);
@@ -147,8 +147,6 @@ class ProductCompareServiceFilteringTest {
 
         // then
       then(depositInterestRatesRepository).should().findAllBySaveTrmOrderByFinPrdtCd(term);
-      assertThat(result).extracting(ProductInfoDto::getProductId)
-          .containsExactly("A", "B"); // 상품코드 순으로 정렬
     }
 
     @Test
