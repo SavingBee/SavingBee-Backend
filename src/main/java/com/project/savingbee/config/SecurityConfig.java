@@ -129,10 +129,10 @@ public class SecurityConfig {
                         .successHandler(socialSuccessHandler));
 
         // 인가
-        /*http
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll());*/
         http
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll());
+        /*http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/jwt/exchange", "/jwt/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST,
@@ -147,7 +147,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/user").hasRole(UserRoleType.USER.name())
                         .requestMatchers(HttpMethod.DELETE, "/user").hasRole(UserRoleType.USER.name())
                         .anyRequest().authenticated()
-                );
+                );*/
 
         // 예외 처리
         http
