@@ -45,8 +45,8 @@ public class ProductCompareService {
         depositInterestRatesRepository.findAllBySaveTrmOrderByFinPrdtCd(requestDto.getTermMonth());
 
     return rates.stream()
-        // 단리 / 복리 / 상관없음
-        .filter(r -> matchesIntrRateType(requestDto, r.getIntrRateType()))
+        // 단리 / 복리
+        .filter(r -> requestDto.getIntrRateType().equalsIgnoreCase(r.getIntrRateType()))
         // 최소 이자율(우대금리 기준, 없으면 기본금리)
         .filter(r -> {
           BigDecimal base = r.getIntrRate2() != null ? r.getIntrRate2() : r.getIntrRate();
@@ -65,8 +65,8 @@ public class ProductCompareService {
         savingsInterestRatesRepository.findAllBySaveTrmOrderByFinPrdtCd(requestDto.getTermMonth());
 
     return rates.stream()
-        // 단리 / 복리 / 상관없음
-        .filter(r -> matchesIntrRateType(requestDto, r.getIntrRateType()))
+        // 단리 / 복리
+        .filter(r -> requestDto.getIntrRateType().equalsIgnoreCase(r.getIntrRateType()))
         // 최소 이자율(우대금리 기준, 없으면 기본금리)
         .filter(r -> {
           BigDecimal base = r.getIntrRate2() != null ? r.getIntrRate2() : r.getIntrRate();
@@ -76,14 +76,6 @@ public class ProductCompareService {
         .filter(r -> ableSavingsAmount(requestDto, r))
         .map(ProductInfoDto::fromSavings)
         .toList();
-  }
-
-  // 단리 / 복리 / 상관없음
-  private boolean matchesIntrRateType(CompareRequestDto requestDto, String intrRateType) {
-    if (requestDto.getIntrRateType().equals("Any")) {
-      return true;
-    }
-    return requestDto.getIntrRateType().equals(intrRateType);
   }
 
   // 최소 가입금액 <= 예치 금액 <= 최대 한도
