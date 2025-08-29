@@ -27,7 +27,7 @@ public class UserProduct {
   @Column(name = "user_product_id", insertable = false, updatable = false)
   private Long userProductId; // 보유 상품 고유 ID
 
-  @Column(name = "user_id", insertable = false, updatable = false)
+  @Column(name = "user_id")
   private Long userId; // 사용자 ID
 
   private String bankName; // 은행명

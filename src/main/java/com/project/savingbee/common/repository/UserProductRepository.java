@@ -38,6 +38,10 @@ public interface UserProductRepository extends JpaRepository<UserProduct, Long> 
     @Query("SELECT up FROM UserProduct up WHERE up.isActive = true AND up.maturityDate = :targetDate")
     List<UserProduct> findByMaturityDate(@Param("targetDate") LocalDate targetDate);
     
+    // 사용자별 만기일 기준 조회
+    @Query("SELECT up FROM UserProduct up WHERE up.userId = :userId AND up.isActive = true AND up.maturityDate = :targetDate")
+    List<UserProduct> findByUserIdAndMaturityDateAndIsActiveTrue(@Param("userId") Long userId, @Param("targetDate") LocalDate targetDate);
+    
     // 사용자별 활성 상품 개수
     long countByUserIdAndIsActiveTrue(Long userId);
     
