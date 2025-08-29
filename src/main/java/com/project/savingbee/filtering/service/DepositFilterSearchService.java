@@ -3,6 +3,7 @@ package com.project.savingbee.filtering.service;
 import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.util.KoreanParsing;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -42,12 +43,12 @@ public class DepositFilterSearchService {
     List<ProductSummaryResponse> searchResults = findProductsContainingSearchTerm(
         filteredProducts.getContent(), processedSearchTerm);
 
-    // 검색 결과가 있으면 검색 결과, 없으면 필터링 결과 반환
+    // 검색 결과가 있으면 검색 결과, 없으면 빈 결과 반환
     if (!searchResults.isEmpty()) {
       return new PageImpl<>(searchResults, filteredProducts.getPageable(), searchResults.size());
     } else {
-      // 검색 결과 없음 - 필터링 결과 반환
-      return filteredProducts;
+      // 검색 결과 없음 - 빈 결과 반환
+      return new PageImpl<>(Collections.emptyList(), filteredProducts.getPageable(), 0);
     }
   }
 
