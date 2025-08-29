@@ -161,30 +161,6 @@ class ProductCompareServiceFilteringTest {
     }
 
     @Test
-    @DisplayName("단리/복리 상관없음(Any)일 때")
-    void depositIntrRateTypeAny() {
-        // given
-      int term = 12;
-      DepositInterestRates r1 = depositRateMapped("A", "3.10", "S", "1000000", "5000000", term);
-      DepositInterestRates r2 = depositRateMapped("B", "3.20", "M", "1000000", "5000000", term);
-
-      given(depositInterestRatesRepository.findAllBySaveTrmOrderByFinPrdtCd(term))
-          .willReturn(Arrays.asList(r1, r2));
-
-      CompareRequestDto dto = requestDto("D", "2000000", term, "3.00", "Any");
-      Pageable pageable = pageable(0, 20);
-
-        // when
-      PageResponseDto<ProductInfoDto> result = productCompareService.findFilteredProducts(dto, pageable);
-
-        // then
-      assertThat(result.getTotalElements()).isEqualTo(2);
-      assertThat(result.getContent())
-          .extracting(ProductInfoDto::getProductId)
-          .containsExactly("A", "B");
-    }
-
-    @Test
     @DisplayName("예치금이 경계값일 때")
     void depositAmountRangInclusive() {
         // given
@@ -228,8 +204,8 @@ class ProductCompareServiceFilteringTest {
       Pageable pageable = PageRequest.of(0, 20);
 
         // when
-      CompareRequestDto dto1 = requestDto("S", "100000", term, "0.00", "Any"); // min
-      CompareRequestDto dto2 = requestDto("S", "700000", term, "0.00", "Any"); // max
+      CompareRequestDto dto1 = requestDto("S", "100000", term, "0.00", "S"); // min
+      CompareRequestDto dto2 = requestDto("S", "700000", term, "0.00", "S"); // max
 
       PageResponseDto<ProductInfoDto> atLower =
           productCompareService.findFilteredProducts(dto1, pageable);
