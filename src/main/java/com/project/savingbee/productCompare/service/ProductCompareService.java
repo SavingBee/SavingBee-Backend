@@ -16,6 +16,7 @@ import com.project.savingbee.productCompare.util.CalcEngine;
 import com.project.savingbee.productCompare.util.CalcEngine.CalcResult;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -113,7 +114,12 @@ public class ProductCompareService {
   // 상품 비교
   public CompareResponseDto compareProducts(CompareExecuteRequestDto requestDto) {
     List<ProductCompareInfosDto> products = new ArrayList<>(
-        requestDto.getType().equals("D") ? compareDeposit(requestDto) : compareSavings(requestDto));
+        requestDto.getType().equalsIgnoreCase("D")
+            ? compareDeposit(requestDto) : compareSavings(requestDto));
+
+    // 입력 순서 유지 정렬(먼저 선택한 상품을 왼쪽에)
+    List<String> ids = requestDto.getProductIds();
+    products.sort(Comparator.comparingInt(p -> ids.indexOf(p.getProductId())));
 
     long maxAmount = products.stream().mapToLong(ProductCompareInfosDto::getAmountReceived).max().orElse(0);
     long winners = products.stream().filter(p -> p.getAmountReceived() == maxAmount).count();
@@ -133,23 +139,26 @@ public class ProductCompareService {
 
   // 예금 상품 비교
   private List<ProductCompareInfosDto> compareDeposit(CompareExecuteRequestDto requestDto) {
+    List<String> ids = requestDto.getProductIds();
     int saveTrm = requestDto.getTermMonth();
+    String intrRateType = requestDto.getIntrRateType();
 
     // 선택한 두 상품 정보 가져오기(상품코드 + 이자계산방식 + 예치기간으로)
-    List<ProductCompareInfosDto> products = new ArrayList<>(requestDto.getSelections().size());
-    for (CompareExecuteRequestDto.Selection selection : requestDto.getSelections()) {
-      DepositInterestRates r = depositInterestRatesRepository.findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm(
-              selection.getProductId(), selection.getIntrRateType(), saveTrm)
-          .orElseThrow(
-              () -> new IllegalArgumentException("Invalid productIds/intrRateType/termMonth."));
+    List<DepositInterestRates> rates = depositInterestRatesRepository
+        .findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(ids, intrRateType, saveTrm);
 
+    if (rates.size() != ids.size()) {
+      throw new IllegalArgumentException("Invalid productIds/intrRateType/termMonth.");
+    }
+
+    return rates.stream().map(r -> {
       DepositProducts p = r.getDepositProduct();
 
       // 세후 이자, 실수령액 계산
       CalcResult c = CalcEngine.deposit(
-          requestDto.getAmount(), r.getIntrRate(), saveTrm, r.getIntrRateType());
+          requestDto.getAmount(), r.getIntrRate(), saveTrm, intrRateType);
 
-      products.add(ProductCompareInfosDto.builder()
+      return ProductCompareInfosDto.builder()
           .productId(p.getFinPrdtCd())
           .bankName(p.getFinancialCompany().getKorCoNm())
           .productName(p.getFinPrdtNm())
@@ -159,31 +168,32 @@ public class ProductCompareService {
           .intrAfterTax(c.getAfterTaxInterest())
           .amountReceived(c.getAmountReceived())
           .intrRateType(r.getIntrRateType())
-          .build());
-    }
-
-    return products;
+          .build();
+    }).toList();
   }
 
   // 적금 상품 비교
   private List<ProductCompareInfosDto> compareSavings(CompareExecuteRequestDto requestDto) {
+    List<String> ids = requestDto.getProductIds();
     int saveTrm = requestDto.getTermMonth();
+    String intrRateType = requestDto.getIntrRateType();
 
     // 선택한 두 상품 정보 가져오기(상품코드 + 이자계산방식 + 예치기간으로)
-    List<ProductCompareInfosDto> products = new ArrayList<>(requestDto.getSelections().size());
-    for (CompareExecuteRequestDto.Selection selection : requestDto.getSelections()) {
-      SavingsInterestRates r = savingsInterestRatesRepository.findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm(
-              selection.getProductId(), selection.getIntrRateType(), saveTrm)
-          .orElseThrow(
-              () -> new IllegalArgumentException("Invalid productIds/intrRateType/termMonth."));
+    List<SavingsInterestRates> rates = savingsInterestRatesRepository
+        .findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(ids, intrRateType, saveTrm);
 
+    if (rates.size() != ids.size()) {
+      throw new IllegalArgumentException("Invalid productIds/intrRateType/termMonth.");
+    }
+
+    return rates.stream().map(r -> {
       SavingsProducts p = r.getSavingsProduct();
 
       // 세후 이자, 실수령액 계산
       CalcResult c = CalcEngine.savings(
-          requestDto.getAmount(), r.getIntrRate(), saveTrm, r.getIntrRateType());
+          requestDto.getAmount(), r.getIntrRate(), saveTrm, intrRateType);
 
-      products.add(ProductCompareInfosDto.builder()
+      return ProductCompareInfosDto.builder()
           .productId(p.getFinPrdtCd())
           .bankName(p.getFinancialCompany().getKorCoNm())
           .productName(p.getFinPrdtNm())
@@ -193,9 +203,7 @@ public class ProductCompareService {
           .intrAfterTax(c.getAfterTaxInterest())
           .amountReceived(c.getAmountReceived())
           .intrRateType(r.getIntrRateType())
-          .build());
-    }
-
-    return products;
+          .build();
+    }).toList();
   }
 }
