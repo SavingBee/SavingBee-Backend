@@ -9,6 +9,7 @@ import com.project.savingbee.common.repository.SavingsInterestRatesRepository;
 import com.project.savingbee.productCompare.dto.CompareExecuteRequestDto;
 import com.project.savingbee.productCompare.dto.CompareRequestDto;
 import com.project.savingbee.productCompare.dto.CompareResponseDto;
+import com.project.savingbee.productCompare.dto.PageResponseDto;
 import com.project.savingbee.productCompare.dto.ProductCompareInfosDto;
 import com.project.savingbee.productCompare.dto.ProductInfoDto;
 import com.project.savingbee.productCompare.util.CalcEngine;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +30,12 @@ public class ProductCompareService {
   private final SavingsInterestRatesRepository savingsInterestRatesRepository;
 
   // 상품 필터링
-  public List<ProductInfoDto> findFilteredProducts(CompareRequestDto requestDto) {
-    return requestDto.getType().equals("D") ?
-        findDepositProducts(requestDto) : findSavingsProducts(requestDto);
+  public PageResponseDto<ProductInfoDto> findFilteredProducts(CompareRequestDto requestDto, Pageable pageable) {
+    List<ProductInfoDto> productInfoDtos = requestDto.getType().equals("D")
+        ? findDepositProducts(requestDto)
+        : findSavingsProducts(requestDto);
+
+    return PageResponseDto.fromList(productInfoDtos, pageable);
   }
 
   // 예금 필터링
