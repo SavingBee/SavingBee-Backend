@@ -146,6 +146,7 @@ public class DepositFilterSearchController {
     request.setSort(sort);
     request.setPage(page);
     request.setSize(size);
+    request.setQ(q);
 
     return request;
   }
