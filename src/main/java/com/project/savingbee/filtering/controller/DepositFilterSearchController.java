@@ -56,7 +56,8 @@ public class DepositFilterSearchController {
           maxLimitMin, maxLimitMax, sortField, sortOrder, page, PAGE_SIZE);
 
       // 필터링+검색 서비스 호출
-      Page<ProductSummaryResponse> result = depositFilterSearchService.depositFilterWithSearch(request);
+      Page<ProductSummaryResponse> result = depositFilterSearchService.depositFilterWithSearch(
+          request);
 
       log.info("예금 필터링+검색 결과 - 총 {}개 상품 중 {}개 반환",
           result.getTotalElements(), result.getNumberOfElements());
@@ -76,7 +77,8 @@ public class DepositFilterSearchController {
    * 파라미터를 DepositFilterRequest 객체로 변환 (검색어 포함)
    */
   private DepositFilterRequest buildFilterSearchRequest(
-      String q, String finCoType, String joinWay, String joinDeny, String saveTrm, String intrRateType,
+      String q, String finCoType, String joinWay, String joinDeny, String saveTrm,
+      String intrRateType,
       BigDecimal intrRateMin, BigDecimal intrRateMax, BigDecimal intrRate2Min,
       BigDecimal intrRate2Max,
       BigDecimal maxLimitMin, BigDecimal maxLimitMax, String sortField, String sortOrder,
