@@ -14,7 +14,7 @@ public class CompareExecuteRequestDto {
   @NotNull
   @Size(min = 2, max = 2)
   @UniqueElements // 중복 방지
-  private List<Selection> selections; // 선택한 두 상품의 상품코드 & 이자계산방식
+  private List<String> productIds; // 선택한 두 상품의 상품코드
 
   @NotNull
   private String type;  // 예금(D) / 적금(S)
@@ -25,13 +25,6 @@ public class CompareExecuteRequestDto {
   @NotNull
   private Integer termMonth;  // 예치 기간
 
-  @Getter
-  @Setter
-  public static class Selection {
-    @NotNull
-    private String productId; // 상품코드
-
-    @NotNull
-    private String intrRateType;  // 단리(S) / 복리(M)
-  }
+  @NotNull
+  private String intrRateType;  // 단리(S) / 복리(M)
 }
