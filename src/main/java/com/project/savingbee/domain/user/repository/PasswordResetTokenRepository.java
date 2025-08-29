@@ -13,6 +13,9 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     Optional<PasswordResetToken> findByUsernameAndVerificationCodeAndIsUsedFalseAndExpiresAtAfter(
         String username, String verificationCode, LocalDateTime now);
     
+    Optional<PasswordResetToken> findByUsernameAndIsVerifiedTrueAndIsUsedFalseAndExpiresAtAfter(
+        String username, LocalDateTime now);
+    
     void deleteByUsernameAndEmail(String username, String email);
     
     void deleteByExpiresAtBefore(LocalDateTime now); // 만료된 토큰 삭제용

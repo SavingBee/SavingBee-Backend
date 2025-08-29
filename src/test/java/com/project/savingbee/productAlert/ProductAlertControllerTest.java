@@ -145,7 +145,7 @@ class ProductAlertControllerTest {
         .andExpect(jsonPath("$.rsrvTypeFixed").value(true))
         .andExpect(jsonPath("$.createdAt", notNullValue()))
         .andExpect(jsonPath("$.updatedAt", nullValue()))
-        .andExpect(status().isOk());
+        .andExpect(status().isCreated());
   }
 
   @Test

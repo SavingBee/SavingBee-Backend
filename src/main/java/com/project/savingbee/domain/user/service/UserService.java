@@ -9,9 +9,11 @@ import com.project.savingbee.domain.user.entity.SocialProviderType;
 import com.project.savingbee.domain.user.entity.UserEntity;
 import com.project.savingbee.domain.user.entity.UserRoleType;
 import com.project.savingbee.domain.user.entity.SignupVerificationToken;
+import com.project.savingbee.domain.user.entity.FindUsernameVerificationToken;
 import com.project.savingbee.domain.user.repository.PasswordResetTokenRepository;
 import com.project.savingbee.domain.user.repository.UserRepository;
 import com.project.savingbee.domain.user.repository.SignupVerificationTokenRepository;
+import com.project.savingbee.domain.user.repository.FindUsernameVerificationTokenRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -42,18 +44,21 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
     private final JwtService jwtService;
     private final EmailService emailService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final SignupVerificationTokenRepository signupVerificationTokenRepository; // 추가
+    private final SignupVerificationTokenRepository signupVerificationTokenRepository;
+    private final FindUsernameVerificationTokenRepository findUsernameVerificationTokenRepository;
 
     public UserService(PasswordEncoder passwordEncoder, UserRepository userRepository, 
                       JwtService jwtService, EmailService emailService,
                       PasswordResetTokenRepository passwordResetTokenRepository,
-                      SignupVerificationTokenRepository signupVerificationTokenRepository) {
+                      SignupVerificationTokenRepository signupVerificationTokenRepository,
+                      FindUsernameVerificationTokenRepository findUsernameVerificationTokenRepository) {
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.emailService = emailService;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
-        this.signupVerificationTokenRepository = signupVerificationTokenRepository; // 추가
+        this.signupVerificationTokenRepository = signupVerificationTokenRepository;
+        this.findUsernameVerificationTokenRepository = findUsernameVerificationTokenRepository; // 추가
     }
 
     // 자체 로그인 회원 가입 (존재 여부)
@@ -97,9 +102,9 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         return userId;
     }
 
-    // 새로운 방식: 이메일 인증 후 회원가입
+    // 새로운 방식: 이메일 인증 후 회원가입 완료
     @Transactional
-    public Long addUserWithEmailVerification(UserRequestDTO dto) {
+    public Long completeSignup(UserRequestDTO dto) {
         // 인증된 토큰 확인
         Optional<SignupVerificationToken> tokenOpt = signupVerificationTokenRepository
             .findByEmailAndIsVerifiedTrueAndIsUsedFalseAndExpiresAtAfter(
@@ -137,7 +142,12 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         signupVerificationTokenRepository.save(token);
 
         // 환영 이메일 발송
-        emailService.sendSignupWelcomeEmail(dto.getEmail(), dto.getUsername());
+        try {
+            emailService.sendSignupWelcomeEmail(dto.getEmail(), dto.getUsername());
+        } catch (Exception e) {
+            // 이메일 발송 실패해도 회원가입은 성공 처리
+            // log.warn("환영 이메일 발송 실패: {}", e.getMessage());
+        }
 
         return userId;
     }
@@ -335,17 +345,75 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         return new UserResponseDTO(username, entity.getIsSocial(), entity.getNickname(), entity.getEmail());
     }
 
-    // 아이디 찾기 (이메일로)
+    // 아이디 찾기 이메일 인증 코드 발송 (1단계: 이메일만 입력)
     @Transactional
-    public void findUsername(UserRequestDTO dto) {
+    public void sendFindUsernameVerificationCode(UserRequestDTO dto) {
+        // 해당 이메일로 가입된 계정이 있는지 확인
         Optional<UserEntity> userEntity = userRepository.findByEmailAndIsSocial(dto.getEmail(), false);
         
         if (userEntity.isEmpty()) {
             throw new IllegalArgumentException("해당 이메일로 가입된 계정이 없습니다.");
         }
+
+        // 기존 토큰 삭제
+        findUsernameVerificationTokenRepository.deleteByEmail(dto.getEmail());
+
+        // 6자리 인증 코드 생성
+        String verificationCode = generateVerificationCode();
+
+        // 토큰 생성 (10분 후 만료) - 찾은 아이디도 함께 저장
+        FindUsernameVerificationToken token = FindUsernameVerificationToken.builder()
+            .email(dto.getEmail())
+            .verificationCode(verificationCode)
+            .expiresAt(LocalDateTime.now().plusMinutes(10))
+            .foundUsername(userEntity.get().getUsername()) // 찾은 아이디 저장
+            .isUsed(false)
+            .isVerified(false)
+            .build();
+
+        findUsernameVerificationTokenRepository.save(token);
+
+        // 이메일로 인증 코드 발송
+        emailService.sendFindUsernameVerificationCodeEmail(dto.getEmail(), verificationCode);
+    }
+
+    // 아이디 찾기 인증 코드 확인 (2단계: 인증 코드 검증)
+    @Transactional
+    public boolean verifyFindUsernameCode(UserRequestDTO dto) {
+        Optional<FindUsernameVerificationToken> tokenOpt = findUsernameVerificationTokenRepository
+            .findByEmailAndVerificationCodeAndIsUsedFalseAndExpiresAtAfter(
+                dto.getEmail(), dto.getVerificationCode(), LocalDateTime.now());
+
+        if (tokenOpt.isPresent()) {
+            // 인증 완료 처리
+            FindUsernameVerificationToken token = tokenOpt.get();
+            token.setIsVerified(true);
+            findUsernameVerificationTokenRepository.save(token);
+            return true;
+        }
+        return false;
+    }
+
+    // 아이디 찾기 결과 조회 (3단계: 인증된 사용자에게 아이디 제공)
+    @Transactional
+    public String getFindUsernameResult(UserRequestDTO dto) {
+        // 인증된 토큰 확인
+        Optional<FindUsernameVerificationToken> tokenOpt = findUsernameVerificationTokenRepository
+            .findByEmailAndIsVerifiedTrueAndIsUsedFalseAndExpiresAtAfter(
+                dto.getEmail(), LocalDateTime.now());
         
-        // 이메일로 아이디 발송
-        emailService.sendUsernameEmail(dto.getEmail(), userEntity.get().getUsername());
+        if (tokenOpt.isEmpty()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+        }
+
+        FindUsernameVerificationToken token = tokenOpt.get();
+        String username = token.getFoundUsername();
+
+        // 토큰 사용 처리
+        token.setIsUsed(true);
+        findUsernameVerificationTokenRepository.save(token);
+
+        return username;
     }
 
     // 비밀번호 재설정 (임시 비밀번호 발급)
@@ -370,7 +438,39 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         emailService.sendTemporaryPasswordEmail(dto.getEmail(), dto.getUsername(), temporaryPassword);
     }
 
-    // 비밀번호 찾기 (인증 코드 발송)
+    // 비밀번호 찾기 이메일 인증 코드 발송 (1단계: 아이디+이메일 입력)
+    @Transactional
+    public void sendFindPasswordVerificationCode(UserRequestDTO dto) {
+        Optional<UserEntity> userEntity = userRepository.findByUsernameAndEmailAndIsSocial(
+            dto.getUsername(), dto.getEmail(), false);
+        
+        if (userEntity.isEmpty()) {
+            throw new IllegalArgumentException("입력하신 아이디와 이메일이 일치하는 계정이 없습니다.");
+        }
+        
+        // 기존 토큰 삭제
+        passwordResetTokenRepository.deleteByUsernameAndEmail(dto.getUsername(), dto.getEmail());
+        
+        // 6자리 인증 코드 생성
+        String verificationCode = generateVerificationCode();
+        
+        // 토큰 생성 (10분 후 만료)
+        PasswordResetToken token = PasswordResetToken.builder()
+            .username(dto.getUsername())
+            .email(dto.getEmail())
+            .verificationCode(verificationCode)
+            .expiresAt(LocalDateTime.now().plusMinutes(10))
+            .isUsed(false)
+            .isVerified(false)
+            .build();
+        
+        passwordResetTokenRepository.save(token);
+        
+        // 이메일로 인증 코드 발송
+        emailService.sendFindPasswordVerificationCodeEmail(dto.getEmail(), dto.getUsername(), verificationCode);
+    }
+
+    // 비밀번호 찾기 (인증 코드 발송) - 기존 방식 유지
     @Transactional
     public void findPassword(UserRequestDTO dto) {
         Optional<UserEntity> userEntity = userRepository.findByUsernameAndEmailAndIsSocial(
@@ -400,7 +500,24 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         emailService.sendVerificationCodeEmail(dto.getEmail(), dto.getUsername(), verificationCode);
     }
 
-    // 인증 코드 확인
+    // 비밀번호 찾기 인증 코드 확인 (2단계: 인증 코드 검증)
+    @Transactional
+    public boolean verifyFindPasswordCode(UserRequestDTO dto) {
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository
+            .findByUsernameAndVerificationCodeAndIsUsedFalseAndExpiresAtAfter(
+                dto.getUsername(), dto.getVerificationCode(), LocalDateTime.now());
+
+        if (tokenOpt.isPresent()) {
+            // 인증 완료 처리
+            PasswordResetToken token = tokenOpt.get();
+            token.setIsVerified(true);
+            passwordResetTokenRepository.save(token);
+            return true;
+        }
+        return false;
+    }
+
+    // 인증 코드 확인 - 기존 방식 유지
     @Transactional(readOnly = true)
     public boolean verifyCode(UserRequestDTO dto) {
         Optional<PasswordResetToken> token = passwordResetTokenRepository
@@ -410,7 +527,40 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         return token.isPresent();
     }
 
-    // 새 비밀번호 설정
+    // 비밀번호 재설정 완료 (3단계: 인증된 사용자에게 새 비밀번호 설정)
+    @Transactional
+    public void resetPasswordComplete(UserRequestDTO dto) {
+        // 인증된 토큰 확인
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository
+            .findByUsernameAndIsVerifiedTrueAndIsUsedFalseAndExpiresAtAfter(
+                dto.getUsername(), LocalDateTime.now());
+        
+        if (tokenOpt.isEmpty()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+        }
+        
+        // 비밀번호 확인 검증
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+        
+        // 사용자 비밀번호 업데이트
+        Optional<UserEntity> userEntity = userRepository.findByUsernameAndIsSocial(dto.getUsername(), false);
+        if (userEntity.isEmpty()) {
+            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+        }
+        
+        UserEntity user = userEntity.get();
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        userRepository.save(user);
+        
+        // 토큰 사용 처리
+        PasswordResetToken token = tokenOpt.get();
+        token.setIsUsed(true);
+        passwordResetTokenRepository.save(token);
+    }
+
+    // 새 비밀번호 설정 - 기존 방식 유지
     @Transactional
     public void setNewPassword(UserRequestDTO dto) {
         // 인증 코드 확인
@@ -462,7 +612,7 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         return String.format("%06d", random.nextInt(1000000));
     }
 
-    // 회원가입 이메일 인증 코드 발송
+    // 회원가입 이메일 인증 코드 발송 (1단계: 이메일만 입력)
     @Transactional
     public void sendSignupVerificationCode(UserRequestDTO dto) {
         // 이미 가입된 이메일인지 확인
@@ -477,14 +627,13 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         // 6자리 인증 코드 생성
         String verificationCode = generateVerificationCode();
 
-        // 토큰 생성 (10분 후 만료)
+        // 토큰 생성 (10분 후 만료) - 이메일과 인증 코드만 저장
         SignupVerificationToken token = SignupVerificationToken.builder()
-            .email(dto.getEmail()) // 이메일
+            .email(dto.getEmail())
             .verificationCode(verificationCode)
             .expiresAt(LocalDateTime.now().plusMinutes(10))
-            .tempUsername(dto.getUsername()) //사용자명 임시 저장
-            .tempPassword(passwordEncoder.encode(dto.getPassword())) // 비밀번호 암호화 저장
-            .tempNickname(dto.getNickname()) // 닉네임 임시저장
+            .isUsed(false)
+            .isVerified(false)
             .build();
 
         signupVerificationTokenRepository.save(token);
@@ -493,7 +642,7 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         emailService.sendSignupVerificationCodeEmail(dto.getEmail(), verificationCode);
     }
 
-    // 회원가입 인증 코드 확인
+    // 회원가입 인증 코드 확인 (1단계: 인증 코드 검증)
     @Transactional
     public boolean verifySignupCode(UserRequestDTO dto) {
         Optional<SignupVerificationToken> tokenOpt = signupVerificationTokenRepository

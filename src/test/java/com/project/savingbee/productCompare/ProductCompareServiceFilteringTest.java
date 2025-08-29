@@ -12,11 +12,11 @@ import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.common.repository.DepositInterestRatesRepository;
 import com.project.savingbee.common.repository.SavingsInterestRatesRepository;
 import com.project.savingbee.productCompare.dto.CompareRequestDto;
+import com.project.savingbee.productCompare.dto.PageResponseDto;
 import com.project.savingbee.productCompare.dto.ProductInfoDto;
 import com.project.savingbee.productCompare.service.ProductCompareService;
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,6 +25,8 @@ import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class ProductCompareServiceFilteringTest {
@@ -46,6 +48,10 @@ class ProductCompareServiceFilteringTest {
     return requestDto;
   }
 
+  private Pageable pageable(int page, int size) {
+    return PageRequest.of(page, size);
+  }
+
   // 필터링 통과하는 케이스 용
   private DepositInterestRates depositRateMapped(
       String prdtCd, String intr2, String intrType,
@@ -58,7 +64,7 @@ class ProductCompareServiceFilteringTest {
 
     given(p.getFinPrdtCd()).willReturn(prdtCd);
     given(p.getMinAmount()).willReturn(new BigDecimal(minAmt));
-    given(p.getMaxAmount()).willReturn(new BigDecimal(maxAmt));
+    given(p.getMaxLimit()).willReturn(new BigDecimal(maxAmt));
 
     given(r.getIntrRate2()).willReturn(new BigDecimal(intr2));
     given(r.getIntrRateType()).willReturn(intrType);
@@ -141,14 +147,17 @@ class ProductCompareServiceFilteringTest {
           .willReturn(Arrays.asList(r1, r2, r3, r4, r5));
 
       CompareRequestDto dto = requestDto("D", "3000000", term, "3.00", "S");
+      Pageable pageable = pageable(0, 20);
 
         // when
-      List<ProductInfoDto> result = productCompareService.findFilteredProducts(dto);
+      PageResponseDto<ProductInfoDto> result = productCompareService.findFilteredProducts(dto, pageable);
 
         // then
       then(depositInterestRatesRepository).should().findAllBySaveTrmOrderByFinPrdtCd(term);
-      assertThat(result).extracting(ProductInfoDto::getProductId)
-          .containsExactly("A", "B"); // 상품코드 순으로 정렬
+
+      assertThat(result.getPage()).isEqualTo(0);
+      assertThat(result.getSize()).isEqualTo(20);
+      assertThat(result.getTotalElements()).isEqualTo(2);
     }
 
     @Test
@@ -163,12 +172,15 @@ class ProductCompareServiceFilteringTest {
           .willReturn(Arrays.asList(r1, r2));
 
       CompareRequestDto dto = requestDto("D", "2000000", term, "3.00", "Any");
+      Pageable pageable = pageable(0, 20);
 
         // when
-      List<ProductInfoDto> result = productCompareService.findFilteredProducts(dto);
+      PageResponseDto<ProductInfoDto> result = productCompareService.findFilteredProducts(dto, pageable);
 
         // then
-      assertThat(result).extracting(ProductInfoDto::getProductId)
+      assertThat(result.getTotalElements()).isEqualTo(2);
+      assertThat(result.getContent())
+          .extracting(ProductInfoDto::getProductId)
           .containsExactly("A", "B");
     }
 
@@ -183,16 +195,18 @@ class ProductCompareServiceFilteringTest {
       given(depositInterestRatesRepository.findAllBySaveTrmOrderByFinPrdtCd(term))
           .willReturn(Arrays.asList(rMin, rMax));
 
+      Pageable pageable = pageable(0, 20);
+
         // when
       CompareRequestDto minDto = requestDto("D", "1000000", term, "0.00", "S"); // min
       CompareRequestDto maxDto = requestDto("D", "5000000", term, "0.00", "S"); // max
 
-      List<ProductInfoDto> atMin = productCompareService.findFilteredProducts(minDto);
-      List<ProductInfoDto> atMax = productCompareService.findFilteredProducts(maxDto);
+      PageResponseDto<ProductInfoDto> atMin = productCompareService.findFilteredProducts(minDto, pageable);
+      PageResponseDto<ProductInfoDto> atMax = productCompareService.findFilteredProducts(maxDto, pageable);
 
         // then
-      assertThat(atMin).extracting(ProductInfoDto::getProductId).containsExactly("MIN", "MAX");
-      assertThat(atMax).extracting(ProductInfoDto::getProductId).containsExactly("MIN", "MAX");
+      assertThat(atMin.getTotalElements()).isEqualTo(2);
+      assertThat(atMin.getContent()).extracting(ProductInfoDto::getProductId).containsExactly("MIN", "MAX");
     }
   }
 
@@ -211,17 +225,32 @@ class ProductCompareServiceFilteringTest {
       given(savingsInterestRatesRepository.findAllBySaveTrmOrderByFinPrdtCd(term))
           .willReturn(Arrays.asList(r1, r2));
 
+      Pageable pageable = PageRequest.of(0, 20);
+
         // when
       CompareRequestDto dto1 = requestDto("S", "100000", term, "0.00", "Any"); // min
       CompareRequestDto dto2 = requestDto("S", "700000", term, "0.00", "Any"); // max
 
-      List<ProductInfoDto> atLower = productCompareService.findFilteredProducts(dto1);
-      List<ProductInfoDto> atUpper = productCompareService.findFilteredProducts(dto2);
+      PageResponseDto<ProductInfoDto> atLower =
+          productCompareService.findFilteredProducts(dto1, pageable);
+      PageResponseDto<ProductInfoDto> atUpper =
+          productCompareService.findFilteredProducts(dto2, pageable);
 
         // then
       then(savingsInterestRatesRepository).should(times(2)).findAllBySaveTrmOrderByFinPrdtCd(term);
-      assertThat(atLower).extracting(ProductInfoDto::getProductId).containsExactly("S1");
-      assertThat(atUpper).extracting(ProductInfoDto::getProductId).containsExactly("S2");
+      assertThat(atLower.getPage()).isEqualTo(0);
+      assertThat(atLower.getSize()).isEqualTo(20);
+      assertThat(atLower.getTotalElements()).isEqualTo(1);
+      assertThat(atLower.getContent())
+          .extracting(ProductInfoDto::getProductId)
+          .containsExactly("S1");
+
+      assertThat(atUpper.getPage()).isEqualTo(0);
+      assertThat(atUpper.getSize()).isEqualTo(20);
+      assertThat(atUpper.getTotalElements()).isEqualTo(1);
+      assertThat(atUpper.getContent())
+          .extracting(ProductInfoDto::getProductId)
+          .containsExactly("S2");
     }
 
     @Test
@@ -238,11 +267,18 @@ class ProductCompareServiceFilteringTest {
 
       CompareRequestDto dto = requestDto("S", "10000", term, "4.00", "M");
 
+      Pageable pageable = PageRequest.of(0, 20);
+
         // when
-      List<ProductInfoDto> result = productCompareService.findFilteredProducts(dto);
+      PageResponseDto<ProductInfoDto> result =
+          productCompareService.findFilteredProducts(dto, pageable);
 
         // then
-      assertThat(result).extracting(ProductInfoDto::getProductId)
+      assertThat(result.getPage()).isEqualTo(0);
+      assertThat(result.getSize()).isEqualTo(20);
+      assertThat(result.getTotalElements()).isEqualTo(1);
+      assertThat(result.getContent())
+          .extracting(ProductInfoDto::getProductId)
           .containsExactly("OK");
     }
   }
