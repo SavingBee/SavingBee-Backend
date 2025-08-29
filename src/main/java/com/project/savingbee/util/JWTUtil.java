@@ -19,7 +19,8 @@ public class JWTUtil {
         String secretKeyString = "himynameissavingbeenicetomeetyou";
         secretKey = new SecretKeySpec(secretKeyString.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
 
-        accessTokenExpiresIn = 3600L * 1000; // 1시간
+        // 개발용으로 24시간 설정 (운영시에는 1-2시간 권장)
+        accessTokenExpiresIn = 24 * 3600L * 1000; // 24시간 (개발용)
         refreshTokenExpiresIn = 604800L * 1000; // 7일
     }
 
