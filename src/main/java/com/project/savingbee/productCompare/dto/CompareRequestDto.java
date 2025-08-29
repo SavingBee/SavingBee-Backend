@@ -15,11 +15,11 @@ public class CompareRequestDto {
   private BigDecimal amount;  // 예치금 / 월 납입금
 
   @NotNull
-  private Integer termMonth;  // 예치 기간
+  private Integer termMonth;  // 예치 기간 [6, 12, 24, 36]
 
   @NotNull
   private BigDecimal minRate; // 최소 이자율(%)
 
   @NotNull
-  private String intrRateType;  // 단리(S) / 복리(M) / 상관없음(Any)
+  private String intrRateType;  // 단리(S) / 복리(M)
 }
