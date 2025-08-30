@@ -183,7 +183,8 @@ class ProductCompareServiceFilteringTest {
 
         // then
       assertThat(atMin.getTotalElements()).isEqualTo(2);
-      assertThat(atMin.getContent()).extracting(ProductInfoDto::getProductId).containsExactly("MIN", "MAX");
+      assertThat(atMin.getContent())
+          .extracting(ProductInfoDto::getProductId).containsExactly("MAX", "MIN");  // 상품코드 정렬
     }
 
     @Test
