@@ -42,4 +42,27 @@ public class SavingFilterRequest extends BaseFilterRequest {
   public boolean hasFilters() {
     return filters != null;
   }
+
+  // 검색어만 있고 다른 필터 조건은 없는지 체크
+  public boolean hasOnlySearchTerm() {
+    return hasSearchTerm() && isFiltersEmpty();
+  }
+
+  // 모든 필터 조건이 비어있는지 체크
+  private boolean isFiltersEmpty() {
+    if (filters == null) {
+      return true;
+    }
+
+    return (filters.getOrgTypeCode() == null || filters.getOrgTypeCode().isEmpty()) &&
+        (filters.getJoinWay() == null || filters.getJoinWay().isEmpty()) &&
+        (filters.getJoinDeny() == null || filters.getJoinDeny().isEmpty()) &&
+        (filters.getSaveTrm() == null || filters.getSaveTrm().isEmpty()) &&
+        (filters.getIntrRateType() == null || filters.getIntrRateType().isEmpty()) &&
+        (filters.getRsrvType() == null || filters.getRsrvType().isEmpty()) &&
+        filters.getMonthlyMaxLimit() == null &&
+        filters.getTotalMaxLimit() == null &&
+        filters.getIntrRate() == null &&
+        filters.getIntrRate2() == null;
+  }
 }
