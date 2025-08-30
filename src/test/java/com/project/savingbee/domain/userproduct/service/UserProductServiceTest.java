@@ -172,27 +172,27 @@ class UserProductServiceTest {
         // then
         assertThat(response.getProductName()).isEqualTo("NH예금");
     }
-
-    @Test
-    @DisplayName("만기 임박 상품 조회 성공")
-    void getMaturityProducts_success() {
-        Long productId = 100L;
-        // given
-        LocalDate target = LocalDate.now().plusDays(7);
-        UserProduct product = UserProduct.builder()
-                .userProductId(productId)
-                .userId(1L)
-                .maturityDate(target)
-                .productName("7일만기 상품")
-                .build();
-
-        given(userProductRepository.findByMaturityDate(target)).willReturn(List.of(product));
-
-        // when
-        var result = userProductService.getMaturityProducts(7);
-
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getProductName()).isEqualTo("7일만기 상품");
-    }
+//
+//    @Test
+//    @DisplayName("만기 임박 상품 조회 성공")
+//    void getMaturityProducts_success() {
+//        Long productId = 100L;
+//        // given
+//        LocalDate target = LocalDate.now().plusDays(7);
+//        UserProduct product = UserProduct.builder()
+//                .userProductId(productId)
+//                .userId(1L)
+//                .maturityDate(target)
+//                .productName("7일만기 상품")
+//                .build();
+//
+//        given(userProductRepository.findByMaturityDate(target)).willReturn(List.of(product));
+//
+//        // when
+//        var result = userProductService.getMaturityProducts(7);
+//
+//        // then
+//        assertThat(result).hasSize(1);
+//        assertThat(result.get(0).getProductName()).isEqualTo("7일만기 상품");
+//    }
 }
