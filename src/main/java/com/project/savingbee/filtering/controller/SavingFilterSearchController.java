@@ -25,7 +25,7 @@ public class SavingFilterSearchController {
 
   private final SavingFilterSearchService savingFilterSearchService;
 
-  @GetMapping("saving/search")
+  @GetMapping("saving")
   public ResponseEntity<Page<ProductSummaryResponse>> filterSavingProductsWithSearch(
       @RequestParam(required = false) String q,              // 검색어 추가
       @RequestParam(required = false) String finCoType,
