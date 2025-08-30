@@ -36,7 +36,17 @@ public class ProductCompareService {
         ? findDepositProducts(requestDto)
         : findSavingsProducts(requestDto);
 
-    return PageResponseDto.fromList(productInfoDtos, pageable);
+    // 우대금리 내림차순(null일 경우 기본금리를 비교), 동률일 경우 상품코드 오름차순
+    Comparator<ProductInfoDto> intrRate2Desc =
+        Comparator.comparing(
+            (ProductInfoDto p) -> {
+              BigDecimal rate2 = p.getIntrRate2();
+              return (rate2 != null) ? rate2 : p.getIntrRate();
+            }).reversed().thenComparing(ProductInfoDto::getProductId);
+
+    List<ProductInfoDto> sorted = productInfoDtos.stream().sorted(intrRate2Desc).toList();
+
+    return PageResponseDto.fromList(sorted, pageable);
   }
 
   // 예금 필터링

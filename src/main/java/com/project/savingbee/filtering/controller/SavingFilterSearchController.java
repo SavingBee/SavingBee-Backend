@@ -3,7 +3,7 @@ package com.project.savingbee.filtering.controller;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.dto.SavingFilterRequest;
 import com.project.savingbee.filtering.dto.SortFilter;
-import com.project.savingbee.filtering.service.SavingFilterService;
+import com.project.savingbee.filtering.service.SavingFilterSearchService;
 import com.project.savingbee.filtering.util.FilterMappingUtil;
 import com.project.savingbee.filtering.util.FilterParsingUtil;
 import java.math.BigDecimal;
@@ -17,27 +17,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 적금 상품 필터링 Controller
- */
 @Slf4j
 @RestController
-@RequestMapping("/products/onlyfilter")
+@RequestMapping("/products/filter")
 @RequiredArgsConstructor
-public class SavingFilterController {
+public class SavingFilterSearchController {
 
-  private final SavingFilterService savingFilterService;
+  private final SavingFilterSearchService savingFilterSearchService;
 
   @GetMapping("saving")
-  public ResponseEntity<Page<ProductSummaryResponse>> filterSavingProducts(
+  public ResponseEntity<Page<ProductSummaryResponse>> filterSavingProductsWithSearch(
+      @RequestParam(required = false) String q,              // 검색어 추가
       @RequestParam(required = false) String finCoType,
       @RequestParam(required = false) String joinWay,
       @RequestParam(required = false) String joinDeny,
       @RequestParam(required = false) String saveTrm,
       @RequestParam(required = false) String intrRateType,
-      @RequestParam(required = false) String rsrvType,        // 적금 고유
-      @RequestParam(required = false) Integer monthlyMaxLimit, // 적금 고유
-      @RequestParam(required = false) Integer totalMaxLimit,   // 적금 고유
+      @RequestParam(required = false) String rsrvType,       // 적금 고유: 적립방식
+      @RequestParam(required = false) Integer monthlyMaxLimit, // 적금 고유: 월 저축금
+      @RequestParam(required = false) Integer totalMaxLimit,   // 적금 고유: 총 저축금
       @RequestParam(required = false) BigDecimal intrRateMin,
       @RequestParam(required = false) BigDecimal intrRateMax,
       @RequestParam(required = false) BigDecimal intrRate2Min,
@@ -45,44 +43,48 @@ public class SavingFilterController {
       @RequestParam(required = false) String sortField,
       @RequestParam(required = false) String sortOrder,
       @RequestParam(defaultValue = "1") Integer page) {
-    // 고정 페이지 크기
+
     final int PAGE_SIZE = 10;
 
-    log.info("적금 필터링 요청 - 페이지: {}, 크기: {}, 정렬: {} {}",
-        page, PAGE_SIZE, sortField, sortOrder);
+    log.info("적금 필터링+검색 요청 - 검색어: {}, 페이지: {}, 크기: {}, 정렬: {} {}",
+        q, page, PAGE_SIZE, sortField, sortOrder);
 
     try {
       // 요청 파라미터를 SavingFilterRequest로 변환
-      SavingFilterRequest request = buildSavingFilterRequest(
-          finCoType, joinWay, joinDeny, saveTrm, intrRateType, rsrvType,
-          monthlyMaxLimit, totalMaxLimit, intrRateMin, intrRateMax,
-          intrRate2Min, intrRate2Max, sortField, sortOrder, page, PAGE_SIZE);
-      // 필터링 서비스 호출
-      Page<ProductSummaryResponse> result = savingFilterService.savingFilter(request);
+      SavingFilterRequest request = buildFilterSearchRequest(
+          q, finCoType, joinWay, joinDeny, saveTrm, intrRateType, rsrvType,
+          monthlyMaxLimit, totalMaxLimit, intrRateMin, intrRateMax, intrRate2Min, intrRate2Max,
+          sortField, sortOrder, page, PAGE_SIZE);
 
-      log.info("적금 필터링 결과 - 총 {}개 상품 중 {}개 반환",
+      // 필터링+검색 서비스 호출
+      Page<ProductSummaryResponse> result = savingFilterSearchService.savingFilterWithSearch(
+          request);
+
+      log.info("적금 필터링+검색 결과 - 총 {}개 상품 중 {}개 반환",
           result.getTotalElements(), result.getNumberOfElements());
 
       return ResponseEntity.ok(result);
+
     } catch (IllegalArgumentException e) {
       log.error("잘못된 요청 파라미터: {}", e.getMessage());
       return ResponseEntity.badRequest().build();
     } catch (Exception e) {
-      log.error("적금 필터링 중 오류 발생", e);
+      log.error("적금 필터링+검색 중 오류 발생", e);
       return ResponseEntity.internalServerError().build();
     }
   }
 
   /**
-   * 파라미터를 SavingFilterRequest 객체로 변환
+   * 파라미터를 SavingFilterRequest 객체로 변환 (검색어 포함)
    */
-  private SavingFilterRequest buildSavingFilterRequest(String finCoType, String joinWay,
-      String joinDeny, String saveTrm,
+  private SavingFilterRequest buildFilterSearchRequest(
+      String q, String finCoType, String joinWay, String joinDeny, String saveTrm,
       String intrRateType, String rsrvType, Integer monthlyMaxLimit, Integer totalMaxLimit,
       BigDecimal intrRateMin, BigDecimal intrRateMax, BigDecimal intrRate2Min,
-      BigDecimal intrRate2Max,
-      String sortField, String sortOrder, Integer page, Integer size) {
-    // 필터 객체 생성
+      BigDecimal intrRate2Max, String sortField, String sortOrder,
+      Integer page, Integer size) {
+
+    // Filters 객체 생성
     SavingFilterRequest.Filters.FiltersBuilder filtersBuilder = SavingFilterRequest.Filters.builder();
 
     // 금융회사 유형 변환
@@ -106,19 +108,19 @@ public class SavingFilterController {
       filtersBuilder.intrRateType(codes);
     }
 
-    // 적립방식 변환 로직
+    // 적립방식 변환 (적금 고유)
     if (rsrvType != null && !rsrvType.trim().isEmpty()) {
       List<String> displayNames = FilterParsingUtil.parseStringList(rsrvType);
       List<String> codes = FilterMappingUtil.convertReserveTypeNamesToCodes(displayNames);
       filtersBuilder.rsrvType(codes);
     }
 
-    // 월 저축금 파라미터 처리
+    // 월 저축금 파라미터 처리 (적금 고유)
     if (monthlyMaxLimit != null) {
       filtersBuilder.monthlyMaxLimit(monthlyMaxLimit);
     }
 
-    // 총 저축금 파라미터 처리
+    // 총 저축금 파라미터 처리 (적금 고유)
     if (totalMaxLimit != null) {
       filtersBuilder.totalMaxLimit(totalMaxLimit);
     }
@@ -135,10 +137,10 @@ public class SavingFilterController {
       filtersBuilder.saveTrm(saveTrmList);
     }
 
-    // 기봄 금리 범위
+    // 기본 금리 범위 설정
     filtersBuilder.intrRate(FilterParsingUtil.buildRangeFilter(intrRateMin, intrRateMax));
 
-    // 우대 금리 범위
+    // 최고 금리 범위 설정
     filtersBuilder.intrRate2(FilterParsingUtil.buildRangeFilter(intrRate2Min, intrRate2Max));
 
     SavingFilterRequest.Filters filters = filtersBuilder.build();
@@ -152,7 +154,7 @@ public class SavingFilterController {
           .build();
     }
 
-    // 최종 적금 요청 객체
+    // 최종 요청 객체 생성
     SavingFilterRequest request = SavingFilterRequest.builder()
         .filters(filters)
         .build();
@@ -160,8 +162,8 @@ public class SavingFilterController {
     request.setSort(sort);
     request.setPage(page);
     request.setSize(size);
+    request.setQ(q);
 
     return request;
   }
-
 }
