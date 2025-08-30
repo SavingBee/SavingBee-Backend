@@ -13,9 +13,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
@@ -39,9 +42,22 @@ public class MyPageController {
      * 현재 사용자 정보 조회
      */
     @GetMapping("/profile")
-    public ResponseEntity<UserResponseDTO> getUserProfile(Principal principal) {
-        UserResponseDTO userInfo = userService.readUser();
-        return ResponseEntity.ok(userInfo);
+    public ResponseEntity<UserResponseDTO> getUserProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        System.out.println("=== MyPageController.getUserProfile Debug ===");
+        System.out.println("UserDetails is null: " + (userDetails == null));
+        
+        if (userDetails != null) {
+            System.out.println("UserDetails username: " + userDetails.getUsername());
+            System.out.println("UserDetails authorities: " + userDetails.getAuthorities());
+            
+            // JWT 토큰이 있고 유효한 경우
+            UserResponseDTO userInfo = userService.getUserInfo(userDetails.getUsername());
+            return ResponseEntity.ok(userInfo);
+        } else {
+            System.out.println("UserDetails is null - returning 401");
+            // JWT 토큰이 없거나 유효하지 않은 경우 - 에러 반환
+            return ResponseEntity.status(401).build();
+        }
     }
 
     /**
@@ -49,11 +65,28 @@ public class MyPageController {
      */
     @PutMapping(value = "/profile", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> updateProfile(
-            @Validated(UserRequestDTO.updateGroup.class) @RequestBody UserRequestDTO dto,
-            Principal principal
+            @RequestBody UserRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails
     ) throws AccessDeniedException {
-        // 현재 로그인한 사용자와 요청 사용자가 일치하는지 확인
-        dto.setUsername(principal.getName());
+        System.out.println("=== MyPageController.updateProfile Debug ===");
+        System.out.println("UserDetails: " + (userDetails != null ? userDetails.getUsername() : "null"));
+        System.out.println("Request DTO: " + dto);
+        
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        // 현재 로그인한 사용자 정보 설정
+        dto.setUsername(userDetails.getUsername());
+        
+        // 간단한 검증
+        if (dto.getNickname() != null && dto.getNickname().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "닉네임은 공백일 수 없습니다."));
+        }
+        
+        if (dto.getEmail() != null && dto.getEmail().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "이메일은 공백일 수 없습니다."));
+        }
         
         userService.updateUser(dto);
         Map<String, String> responseBody = Collections.singletonMap("message", "회원정보가 성공적으로 수정되었습니다.");
@@ -65,11 +98,40 @@ public class MyPageController {
      */
     @PutMapping(value = "/password", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> changePassword(
-            @Validated(UserRequestDTO.changePasswordGroup.class) @RequestBody UserRequestDTO dto,
-            Principal principal
+            @RequestBody UserRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails
     ) throws AccessDeniedException {
-        // 현재 로그인한 사용자와 요청 사용자가 일치하는지 확인
-        dto.setUsername(principal.getName());
+        System.out.println("=== MyPageController.changePassword Debug ===");
+        System.out.println("UserDetails: " + (userDetails != null ? userDetails.getUsername() : "null"));
+        System.out.println("Request DTO: " + dto);
+        
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        // 현재 로그인한 사용자 정보 설정
+        dto.setUsername(userDetails.getUsername());
+        
+        // 간단한 검증
+        if (dto.getCurrentPassword() == null || dto.getCurrentPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "현재 비밀번호는 필수입니다."));
+        }
+        
+        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "새 비밀번호는 필수입니다."));
+        }
+        
+        if (dto.getPasswordConfirm() == null || dto.getPasswordConfirm().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "비밀번호 확인은 필수입니다."));
+        }
+        
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "새 비밀번호와 비밀번호 확인이 일치하지 않습니다."));
+        }
+        
+        if (dto.getPassword().length() < 4) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "비밀번호는 4자 이상이어야 합니다."));
+        }
         
         userService.changePassword(dto);
         Map<String, String> responseBody = Collections.singletonMap("message", "비밀번호가 성공적으로 변경되었습니다.");
@@ -81,10 +143,14 @@ public class MyPageController {
      */
     @GetMapping("/products")
     public ResponseEntity<UserProductPageResponseDTO> getOwnedProducts(
-            Principal principal,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PageableDefault(size = 10) Pageable pageable
     ) {
-        UserProductPageResponseDTO products = userProductService.getUserProducts(principal.getName(), pageable);
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        UserProductPageResponseDTO products = userProductService.getUserProducts(userDetails.getUsername(), pageable);
         return ResponseEntity.ok(products);
     }
 
@@ -93,11 +159,36 @@ public class MyPageController {
      */
     @PostMapping(value = "/products", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> addOwnedProduct(
-            @Validated(UserProductRequestDTO.CreateGroup.class) @RequestBody UserProductRequestDTO dto,
-            Principal principal
+            @RequestBody UserProductRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        // 현재 로그인한 사용자 설정
-        dto.setUsername(principal.getName());
+        System.out.println("=== MyPageController.addOwnedProduct Debug ===");
+        System.out.println("UserDetails: " + (userDetails != null ? userDetails.getUsername() : "null"));
+        System.out.println("Request DTO: " + dto);
+        
+        if (userDetails == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "인증이 필요합니다."));
+        }
+        
+        // 현재 로그인한 사용자 정보 설정
+        dto.setUsername(userDetails.getUsername());
+        
+        // 간단한 검증
+        if (dto.getBankName() == null || dto.getBankName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "은행명은 필수입니다."));
+        }
+        
+        if (dto.getProductName() == null || dto.getProductName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "상품명은 필수입니다."));
+        }
+        
+        if (dto.getDepositAmount() == null || dto.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "금액은 0보다 커야 합니다."));
+        }
+        
+        if (dto.getInterestRate() == null || dto.getInterestRate().compareTo(BigDecimal.ZERO) < 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "금리는 0 이상이어야 합니다."));
+        }
         
         Long userProductId = userProductService.addUserProduct(dto);
         
@@ -114,9 +205,13 @@ public class MyPageController {
     @GetMapping("/products/{userProductId}")
     public ResponseEntity<UserProductResponseDTO> getOwnedProductDetail(
             @PathVariable Long userProductId,
-            Principal principal
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        UserProductResponseDTO product = userProductService.getUserProduct(userProductId, principal.getName());
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        UserProductResponseDTO product = userProductService.getUserProduct(userProductId, userDetails.getUsername());
         return ResponseEntity.ok(product);
     }
 
@@ -126,11 +221,15 @@ public class MyPageController {
     @PutMapping(value = "/products/{userProductId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> updateOwnedProduct(
             @PathVariable Long userProductId,
-            @Validated(UserProductRequestDTO.UpdateGroup.class) @RequestBody UserProductRequestDTO dto,
-            Principal principal
+            @RequestBody UserProductRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        // 현재 로그인한 사용자 설정
-        dto.setUsername(principal.getName());
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        // 현재 로그인한 사용자 정보 설정
+        dto.setUsername(userDetails.getUsername());
         
         userProductService.updateUserProduct(userProductId, dto);
         Map<String, String> responseBody = Collections.singletonMap("message", "보유상품이 성공적으로 수정되었습니다.");
@@ -143,9 +242,13 @@ public class MyPageController {
     @DeleteMapping("/products/{userProductId}")
     public ResponseEntity<Map<String, String>> deleteOwnedProduct(
             @PathVariable Long userProductId,
-            Principal principal
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        userProductService.deleteUserProduct(userProductId, principal.getName());
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        userProductService.deleteUserProduct(userProductId, userDetails.getUsername());
         Map<String, String> responseBody = Collections.singletonMap("message", "보유상품이 성공적으로 삭제되었습니다.");
         return ResponseEntity.ok(responseBody);
     }
@@ -155,11 +258,24 @@ public class MyPageController {
      */
     @DeleteMapping(value = "/account", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> deleteAccount(
-            @Validated(UserRequestDTO.deleteGroup.class) @RequestBody UserRequestDTO dto,
-            Principal principal
+            @RequestBody UserRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails
     ) throws AccessDeniedException {
-        // 현재 로그인한 사용자와 요청 사용자가 일치하는지 확인
-        dto.setUsername(principal.getName());
+        System.out.println("=== MyPageController.deleteAccount Debug ===");
+        System.out.println("UserDetails: " + (userDetails != null ? userDetails.getUsername() : "null"));
+        System.out.println("Request DTO: " + dto);
+        
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        // 현재 로그인한 사용자 정보 설정
+        dto.setUsername(userDetails.getUsername());
+        
+        // 간단한 검증 - 비밀번호 확인 (회원 탈퇴시 보안을 위해)
+        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "회원 탈퇴를 위해 비밀번호 확인이 필요합니다."));
+        }
         
         userService.deleteUser(dto);
         Map<String, String> responseBody = Collections.singletonMap("message", "회원 탈퇴가 성공적으로 처리되었습니다.");

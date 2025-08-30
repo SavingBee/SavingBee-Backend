@@ -30,10 +30,17 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         // username, role
         String username =  authentication.getName();
         String role = authentication.getAuthorities().iterator().next().getAuthority();
+        
+        System.out.println("=== Login Success Handler Debug ===");
+        System.out.println("Login successful for username: " + username);
+        System.out.println("Role: " + role);
 
         // JWT(Access/Refresh) 발급
         String accessToken = JWTUtil.createJWT(username, role, true);
         String refreshToken = JWTUtil.createJWT(username, role, false);
+        
+        System.out.println("Access token created: " + accessToken.substring(0, Math.min(20, accessToken.length())) + "...");
+        System.out.println("Refresh token created: " + refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
 
         // 발급한 Refresh DB 테이블 저장 (Refresh whitelist)
         jwtService.addRefresh(username, refreshToken);
