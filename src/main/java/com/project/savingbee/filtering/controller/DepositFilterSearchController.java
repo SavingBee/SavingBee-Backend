@@ -25,7 +25,7 @@ public class DepositFilterSearchController {
 
   private final DepositFilterSearchService depositFilterSearchService;
 
-  @GetMapping("deposit/search")
+  @GetMapping("deposit")
   public ResponseEntity<Page<ProductSummaryResponse>> filterDepositProductsWithSearch(
       @RequestParam(required = false) String q,              // 검색어 추가
       @RequestParam(required = false) String finCoType,

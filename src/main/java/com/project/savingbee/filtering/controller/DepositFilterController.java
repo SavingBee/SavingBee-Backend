@@ -21,7 +21,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/products/filter")
+@RequestMapping("/products/onlyfilter")
 @RequiredArgsConstructor
 public class DepositFilterController {
 

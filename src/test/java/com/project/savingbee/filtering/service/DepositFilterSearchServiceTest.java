@@ -89,7 +89,7 @@ class DepositFilterSearchServiceTest {
    * 검색어 있고 검색 결과 없는 경우
    */
   @Test
-  @DisplayName("검색어가 있지만 매칭되는 상품이 없을 때 필터링 결과를 반환한다")
+  @DisplayName("검색어가 있지만 매칭되는 상품이 없을 때 빈 결과 반환")
   void testFilterWithSearchResultsNotFound() {
     // Given
     testRequest.setQ("존재하지않는은행");
@@ -103,7 +103,9 @@ class DepositFilterSearchServiceTest {
         testRequest);
 
     // Then
-    assertThat(result).isEqualTo(mockFilteredProducts); // 원래 필터링 결과 반환
+    assertThat(result.getContent()).isEmpty(); // 빈 결과
+    assertThat(result.getTotalElements()).isEqualTo(0); // 총 개수 0
+    assertThat(result.getPageable()).isEqualTo(mockFilteredProducts.getPageable()); // 페이징 정보는 유지
   }
 
   /**
