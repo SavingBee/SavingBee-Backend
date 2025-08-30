@@ -66,7 +66,8 @@ class ProductCompareServiceFilteringTest {
     given(p.getMinAmount()).willReturn(new BigDecimal(minAmt));
     given(p.getMaxLimit()).willReturn(new BigDecimal(maxAmt));
 
-    given(r.getIntrRate2()).willReturn(new BigDecimal(intr2));
+    // 우대금리, null일 경우 기본금리 값으로 대체(2.50 설정)
+    given(r.getIntrRate2()).willReturn(intr2 != null ? new BigDecimal(intr2) : new BigDecimal("2.50"));
     given(r.getIntrRateType()).willReturn(intrType);
     given(r.getIntrRate()).willReturn(new BigDecimal("2.00"));
     given(r.getSaveTrm()).willReturn(term);
@@ -183,6 +184,31 @@ class ProductCompareServiceFilteringTest {
         // then
       assertThat(atMin.getTotalElements()).isEqualTo(2);
       assertThat(atMin.getContent()).extracting(ProductInfoDto::getProductId).containsExactly("MIN", "MAX");
+    }
+
+    @Test
+    @DisplayName("우대금리(null일 경우 기본금리 값으로 대체) 내림차순, 동률시 상품코드 오름차순")
+    void depositSortByPrefRateDesc() {
+      int term = 12;
+
+      DepositInterestRates c = depositRateMapped("C", "3.40", "S", "1000000", "5000000", term);
+      DepositInterestRates a = depositRateMapped("A", "4.10", "S", "1000000", "5000000", term);
+      DepositInterestRates b = depositRateMapped("B", "3.40", "S", "1000000", "5000000", term);
+      DepositInterestRates e = depositRateMapped("E", null,"S", "1000000", "5000000", term);
+      DepositInterestRates d = depositRateMapped("D", "2.90", "S", "1000000", "5000000", term);
+
+      // 섞어서 반환 -> 서비스에서 정렬되는지 검증
+      given(depositInterestRatesRepository.findAllBySaveTrmOrderByFinPrdtCd(term))
+          .willReturn(Arrays.asList(c, a, b, e, d));
+
+      CompareRequestDto dto = requestDto("D", "3000000", term, "0.00", "S");
+      Pageable page = pageable(0, 10);
+
+      PageResponseDto<ProductInfoDto> result = productCompareService.findFilteredProducts(dto, page);
+
+      // 정렬 - a b c d e 순(우대금리(null일 경우 기본금리 값으로 대체) 내림차순, 동률 시 상품코드 오름차순)
+      assertThat(result.getContent()).extracting(ProductInfoDto::getProductId)
+          .containsExactly("A", "B", "C", "D", "E");
     }
   }
 
