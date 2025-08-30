@@ -40,36 +40,21 @@ class ProductCompareServiceTest {
 
   private CompareExecuteRequestDto depositRequestDto(List<String> ids, String amount, int term, String intrType) {
     CompareExecuteRequestDto requestDto = new CompareExecuteRequestDto();
+    requestDto.setProductIds(ids);
     requestDto.setType("D");
     requestDto.setAmount(new BigDecimal(amount));
     requestDto.setTermMonth(term);
-
-    List<CompareExecuteRequestDto.Selection> selections =
-        ids.stream().map(id -> {
-          CompareExecuteRequestDto.Selection selection = new CompareExecuteRequestDto.Selection();
-          selection.setProductId(id);
-          selection.setIntrRateType(intrType);
-          return selection;
-        }).collect(Collectors.toList());
-
-    requestDto.setSelections(selections);
+    requestDto.setIntrRateType(intrType);
     return requestDto;
   }
+
   private CompareExecuteRequestDto savingsRequestDto(List<String> ids, String amount, int term, String intrType) {
     CompareExecuteRequestDto requestDto = new CompareExecuteRequestDto();
+    requestDto.setProductIds(ids);
     requestDto.setType("S");
     requestDto.setAmount(new BigDecimal(amount));
     requestDto.setTermMonth(term);
-
-    List<CompareExecuteRequestDto.Selection> selections =
-        ids.stream().map(id -> {
-          CompareExecuteRequestDto.Selection selection = new CompareExecuteRequestDto.Selection();
-          selection.setProductId(id);
-          selection.setIntrRateType(intrType);
-          return selection;
-        }).collect(Collectors.toList());
-
-    requestDto.setSelections(selections);
+    requestDto.setIntrRateType(intrType);
     return requestDto;
   }
 
@@ -110,26 +95,23 @@ class ProductCompareServiceTest {
     void depositWinnerAndPreserveInputOrder() {
         // given
       int term = 12;
-      DepositInterestRates A = depositRate("A", "은행A", "상품A", "3.10", "3.40", "S");
-      DepositInterestRates B = depositRate("B", "은행B", "상품B", "3.20", "3.50", "S");
+      String intrRateType = "S";
+      DepositInterestRates A = depositRate("A", "은행A", "상품A", "3.10", "3.40", intrRateType);
+      DepositInterestRates B = depositRate("B", "은행B", "상품B", "3.20", "3.50", intrRateType);
 
-      CompareExecuteRequestDto requestDto = depositRequestDto(Arrays.asList("B","A"), "3000000", term, "S");
+      // 레포지토리에서 역순으로 반환해도 서비스가 ids 순(사용자가 선택한 순서)으로 재정렬하는지 검증
+      given(
+          depositInterestRatesRepository.findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("B","A"), intrRateType, term))
+          .willReturn(Arrays.asList(A, B));
 
-      given(depositInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("B", "S", term))
-          .willReturn(Optional.of(B));
-      given(depositInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("A", "S", term))
-          .willReturn(Optional.of(A));
+      CompareExecuteRequestDto requestDto = depositRequestDto(Arrays.asList("B","A"), "3000000", term, intrRateType);
 
         // when
       CompareResponseDto responseDto = productCompareService.compareProducts(requestDto);
 
         // then
       then(depositInterestRatesRepository).should()
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("B", "S", term);
-      then(depositInterestRatesRepository).should()
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("A", "S", term);
+          .findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("B","A"), intrRateType, term);
 
       then(depositInterestRatesRepository).shouldHaveNoMoreInteractions();
 
@@ -145,17 +127,15 @@ class ProductCompareServiceTest {
     void depositSameResults() {
         // given
       int term = 12;
-      DepositInterestRates A = depositRate("A", "은행A", "상품A", "3.10", "3.40", "S");
-      DepositInterestRates B = depositRate("B", "은행B", "상품B", "3.10", "3.40", "S");
+      String intrRateType = "M";
+      DepositInterestRates A = depositRate("A", "은행A", "상품A", "3.10", "3.40", intrRateType);
+      DepositInterestRates B = depositRate("B", "은행B", "상품B", "3.10", "3.40", intrRateType);
 
-      given(depositInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("A", "S", term))
-          .willReturn(Optional.of(A));
-      given(depositInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("B", "S", term))
-          .willReturn(Optional.of(B));
+      given(
+          depositInterestRatesRepository.findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("A","B"), intrRateType, term))
+          .willReturn(Arrays.asList(A, B));
 
-      CompareExecuteRequestDto requestDto = depositRequestDto(Arrays.asList("A","B"), "3000000", term, "S");
+      CompareExecuteRequestDto requestDto = depositRequestDto(Arrays.asList("A","B"), "3000000", term, intrRateType);
 
         // when
       CompareResponseDto responseDto = productCompareService.compareProducts(requestDto);
@@ -167,20 +147,18 @@ class ProductCompareServiceTest {
     }
 
     @Test
-    @DisplayName("상품코드, 이자계산방식 반환 오류")
-    void depositInvalidSelection() {
+    @DisplayName("상품코드 반환 오류")
+    void depositInvalidIds() {
         // given
       int term = 12;
-      DepositInterestRates A = depositRate("A", "은행A", "상품A", "3.10", "3.40", "S");
+      String intrRateType = "S";
+      DepositInterestRates A = mock(DepositInterestRates.class);
 
-      given(depositInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("A", "S", term))
-          .willReturn(Optional.of(A));
-      given(depositInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("B", "S", term))
-          .willReturn(Optional.empty());
+      given(
+          depositInterestRatesRepository.findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("A","B"), intrRateType, term))
+          .willReturn(List.of(A)); // 부족하게 반환
 
-      CompareExecuteRequestDto requestDto = depositRequestDto(Arrays.asList("A","B"), "3000000", term, "S");
+      CompareExecuteRequestDto requestDto = depositRequestDto(Arrays.asList("A","B"), "3000000", term, intrRateType);
 
         // when
 
@@ -200,26 +178,21 @@ class ProductCompareServiceTest {
     void savingsWinnerAndPreserveInputOrder() {
         // given
       int term = 24;
-      SavingsInterestRates X = savingsRate("X", "은행X", "적금X", "4.00", "4.20", "S");
-      SavingsInterestRates Y = savingsRate("Y", "은행Y", "적금Y", "3.50", "3.70", "S");
+      String intrRateType = "M";
+      SavingsInterestRates X = savingsRate("X", "은행X", "적금X", "4.00", "4.20", intrRateType);
+      SavingsInterestRates Y = savingsRate("Y", "은행Y", "적금Y", "3.50", "3.70", intrRateType);
 
-      given(savingsInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("Y", "S", term))
-          .willReturn(Optional.of(Y));
-      given(savingsInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("X", "S", term))
-          .willReturn(Optional.of(X));
+      given(
+          savingsInterestRatesRepository.findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("Y","X"), intrRateType, term))
+          .willReturn(Arrays.asList(X, Y));
 
-      CompareExecuteRequestDto requestDto = savingsRequestDto(Arrays.asList("Y","X"), "100000", term, "S");
+      CompareExecuteRequestDto requestDto = savingsRequestDto(Arrays.asList("Y","X"), "100000", term, intrRateType);
 
         // when
       CompareResponseDto responseDto = productCompareService.compareProducts(requestDto);
 
         // then
-      then(savingsInterestRatesRepository).should()
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("Y", "S", term);
-      then(savingsInterestRatesRepository).should()
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("X", "S", term);
+      then(savingsInterestRatesRepository).should().findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("Y","X"), intrRateType, term);
       then(savingsInterestRatesRepository).shouldHaveNoMoreInteractions();
 
       // X 금리가 더 높으므로 수령액도 높아 winnerId = "X"
@@ -231,17 +204,15 @@ class ProductCompareServiceTest {
     void savingsSameResults() {
         // given
       int term = 24;
-      SavingsInterestRates X = savingsRate("X", "은행X", "적금X", "3.50", "3.70", "S");
-      SavingsInterestRates Y = savingsRate("Y", "은행Y", "적금Y", "3.50", "3.70", "S");
+      String intrRateType = "S";
+      SavingsInterestRates X = savingsRate("X", "은행X", "적금X", "3.50", "3.70", intrRateType);
+      SavingsInterestRates Y = savingsRate("Y", "은행Y", "적금Y", "3.50", "3.70", intrRateType);
 
-      given(savingsInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("Y", "S", term))
-          .willReturn(Optional.of(Y));
-      given(savingsInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("X", "S", term))
-          .willReturn(Optional.of(X));
+      given(
+          savingsInterestRatesRepository.findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("Y","X"), intrRateType, term))
+          .willReturn(Arrays.asList(X, Y));
 
-      CompareExecuteRequestDto requestDto = savingsRequestDto(Arrays.asList("Y","X"), "100000", term, "S");
+      CompareExecuteRequestDto requestDto = savingsRequestDto(Arrays.asList("Y","X"), "100000", term, intrRateType);
 
       // when
       CompareResponseDto responseDto = productCompareService.compareProducts(requestDto);
@@ -253,17 +224,18 @@ class ProductCompareServiceTest {
     }
 
     @Test
-    @DisplayName("상품코드, 이자계산방식 반환 오류")
-    void savingsInvalidSelection() {
+    @DisplayName("상품코드 반환 오류")
+    void savingsInvalidIds() {
         // given
       int term = 24;
-      SavingsInterestRates X = savingsRate("X", "은행X", "적금X", "3.50", "3.70", "S");
+      String intrRateType = "M";
+      SavingsInterestRates X = mock(SavingsInterestRates.class);
 
-      given(savingsInterestRatesRepository
-          .findFirstByFinPrdtCdAndIntrRateTypeAndSaveTrm("X", "S", term))
-          .willReturn(Optional.of(X));
+      given(
+          savingsInterestRatesRepository.findAllByFinPrdtCdInAndIntrRateTypeAndSaveTrm(Arrays.asList("X","Y"), intrRateType, term))
+          .willReturn(List.of(X));
 
-      CompareExecuteRequestDto requestDto = savingsRequestDto(Arrays.asList("X","Y"), "100000", term, "S");
+      CompareExecuteRequestDto requestDto = savingsRequestDto(Arrays.asList("X","Y"), "100000", term, intrRateType);
 
         // when
 

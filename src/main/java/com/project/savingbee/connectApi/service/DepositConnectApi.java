@@ -79,7 +79,12 @@ public class DepositConnectApi {
         }
 
         // 전체 페이지 수 확인
-        int maxPageNo = Integer.parseInt(firstResponse.getResult().getMaxPageNo());
+        String maxPageNoStr = firstResponse.getResult().getMaxPageNo();
+        if (maxPageNoStr == null || maxPageNoStr.trim().isEmpty()) {
+          log.warn("{}번 금융권 maxPageNo가 null이므로 건너뜀", topFinGrpNo);
+          continue;
+        }
+        int maxPageNo = Integer.parseInt(maxPageNoStr);
         log.info("{}번 금융권 총 {}페이지 데이터 처리 시작", topFinGrpNo, maxPageNo);
 
         for (int pageNo = 1; pageNo <= maxPageNo; pageNo++) {

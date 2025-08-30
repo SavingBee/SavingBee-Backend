@@ -160,9 +160,9 @@ public class SecurityConfig {
                         })
                 );
 
-        // 커스텀 필터 추가
-        http
-                .addFilterBefore(new JWTFilter(), LogoutFilter.class);
+        // 커스텀 필터 추가 (개발용으로 JWT 필터 비활성화)
+        // http
+        //         .addFilterBefore(new JWTFilter(), LogoutFilter.class);
 
         http
                 .addFilterBefore(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);

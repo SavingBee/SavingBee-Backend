@@ -269,9 +269,9 @@ public class UserProductService {
     /**
      * 만기 임박 상품 조회 (D-30, D-7, D-1)
      */
-    public List<UserProductResponseDTO> getMaturityProducts(int daysBefore) {
+    public List<UserProductResponseDTO> getMaturityProducts(int daysBefore, Long userId) {
         LocalDate targetDate = LocalDate.now().plusDays(daysBefore);
-        List<UserProduct> products = userProductRepository.findByMaturityDate(targetDate);
+        List<UserProduct> products = userProductRepository.findByUserIdAndMaturityDateAndIsActiveTrue(userId, targetDate);
         return UserProductResponseDTO.fromList(products);
     }
     

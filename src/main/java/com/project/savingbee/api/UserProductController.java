@@ -33,8 +33,8 @@ public class UserProductController {
      */
     @PostMapping
     public ResponseEntity<UserProductResponseDTO> registerUserProduct(
-            @Validated(UserProductRequestDTO.CreateGroup.class) @RequestBody UserProductRequestDTO request) {
-        Long userId = getCurrentUserId();
+            @Validated(UserProductRequestDTO.CreateGroup.class) @RequestBody UserProductRequestDTO request,
+            @RequestParam(defaultValue = "1") Long userId) {
         UserProductResponseDTO response = userProductService.registerUserProduct(userId, request);
         return ResponseEntity.status(201).body(response);
     }
@@ -44,9 +44,11 @@ public class UserProductController {
      */
     @GetMapping
     public ResponseEntity<List<UserProductResponseDTO>> getUserProducts(
-            @ModelAttribute UserProductRequestDTO request) {
-        Long userId = getCurrentUserId();
+            @ModelAttribute UserProductRequestDTO request,
+            @RequestParam(defaultValue = "1") Long userId) {
+        log.info("보유 상품 목록 조회 요청 - userId: {}, filters: {}", userId, request);
         List<UserProductResponseDTO> response = userProductService.getUserProductsList(userId, request);
+        log.info("조회 결과 - 상품 개수: {}", response.size());
         return ResponseEntity.ok(response);
     }
     
@@ -54,8 +56,10 @@ public class UserProductController {
      * 단일 보유 상품 조회
      */
     @GetMapping("/{userProductId}")
-    public ResponseEntity<UserProductResponseDTO> getUserProduct(@PathVariable Long userProductId) {
-        Long userId = getCurrentUserId();
+    public ResponseEntity<UserProductResponseDTO> getUserProduct(
+            @PathVariable Long userProductId,
+            @RequestParam(defaultValue = "1") Long userId) {
+        log.info("단일 보유 상품 조회 요청 - userProductId: {}, userId: {}", userProductId, userId);
         UserProductResponseDTO response = userProductService.getUserProductById(userId, userProductId);
         return ResponseEntity.ok(response);
     }
@@ -66,8 +70,9 @@ public class UserProductController {
     @PutMapping("/{userProductId}")
     public ResponseEntity<UserProductResponseDTO> updateUserProduct(
             @PathVariable Long userProductId,
-            @Validated(UserProductRequestDTO.UpdateGroup.class) @RequestBody UserProductRequestDTO request) {
-        Long userId = getCurrentUserId();
+            @Validated(UserProductRequestDTO.UpdateGroup.class) @RequestBody UserProductRequestDTO request,
+            @RequestParam(defaultValue = "1") Long userId) {
+        log.info("보유 상품 수정 요청 - userProductId: {}, userId: {}", userProductId, userId);
         UserProductResponseDTO response = userProductService.updateUserProductById(userId, userProductId, request);
         return ResponseEntity.ok(response);
     }
@@ -76,8 +81,10 @@ public class UserProductController {
      * 사용자 보유 상품 삭제 (비활성화)
      */
     @DeleteMapping("/{userProductId}")
-    public ResponseEntity<Map<String, String>> deleteUserProduct(@PathVariable Long userProductId) {
-        Long userId = getCurrentUserId();
+    public ResponseEntity<Map<String, String>> deleteUserProduct(
+            @PathVariable Long userProductId,
+            @RequestParam(defaultValue = "1") Long userId) {
+        log.info("보유 상품 삭제 요청 - userProductId: {}, userId: {}", userProductId, userId);
         userProductService.deleteUserProductById(userId, userProductId);
         return ResponseEntity.ok(Map.of("message", "보유 상품이 삭제되었습니다."));
     }
@@ -86,8 +93,9 @@ public class UserProductController {
      * 사용자 보유 상품 요약 정보
      */
     @GetMapping("/summary")
-    public ResponseEntity<UserProductSummaryDTO> getUserProductSummary() {
-        Long userId = getCurrentUserId();
+    public ResponseEntity<UserProductSummaryDTO> getUserProductSummary(
+            @RequestParam(defaultValue = "1") Long userId) {
+        log.info("보유 상품 요약 정보 조회 요청 - userId: {}", userId);
         UserProductSummaryDTO response = userProductService.getUserProductSummary(userId);
         return ResponseEntity.ok(response);
     }
@@ -96,24 +104,17 @@ public class UserProductController {
      * 만기 임박 상품 조회
      */
     @GetMapping("/maturity/{daysBefore}")
-    public ResponseEntity<List<UserProductResponseDTO>> getMaturityProducts(@PathVariable int daysBefore) {
-        List<UserProductResponseDTO> response = userProductService.getMaturityProducts(daysBefore);
+    public ResponseEntity<List<UserProductResponseDTO>> getMaturityProducts(
+            @PathVariable int daysBefore,
+            @RequestParam(defaultValue = "1") Long userId) {
+        log.info("만기 임박 상품 조회 요청 - daysBefore: {}, userId: {}", daysBefore, userId);
+        List<UserProductResponseDTO> response = userProductService.getMaturityProducts(daysBefore, userId);
         return ResponseEntity.ok(response);
     }
     
-    // 현재 사용자 ID 조회 헬퍼 메서드
+    // 현재 사용자 ID 조회 헬퍼 메서드 (개발용 - 고정 사용자 ID 반환)
     private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("인증되지 않은 사용자입니다.");
-        }
-        
-        // 실제 프로젝트에서는 JWT 토큰에서 사용자 ID를 추출하는 로직 필요
-        // 현재는 임시로 username을 Long으로 변환 (실제 구현 시 수정 필요)
-        try {
-            return Long.parseLong(authentication.getName());
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다.");
-        }
+        // 개발용으로 고정 사용자 ID 반환 (실제 구현에서는 JWT에서 추출)
+        return 1L; // 테스트용 사용자 ID
     }
 }
