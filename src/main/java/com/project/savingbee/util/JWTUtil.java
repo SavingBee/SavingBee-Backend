@@ -38,21 +38,43 @@ public class JWTUtil {
     public static Boolean isValid(String token, Boolean isAccess) {
         try {  /*try 하는 이유: {Claims ... retrun false;}를 파싱하는 과정에서 시간이 다되었다면 자동으로 JwtException이 던져지기 때문에
             이것을 잡을 수 있도록하기 위함*/
+            System.out.println("=== JWTUtil.isValid Debug ===");
+            System.out.println("Validating token for isAccess: " + isAccess);
+            
             Claims claims = Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
 
+            System.out.println("Token parsed successfully");
+            System.out.println("Claims: " + claims);
+            
             String type = claims.get("type", String.class);
-            if (type == null) return false;
+            System.out.println("Token type: " + type);
+            System.out.println("Expected type: " + (isAccess ? "access" : "refresh"));
+            
+            if (type == null) {
+                System.out.println("Type is null - returning false");
+                return false;
+            }
 
-            if (isAccess && !type.equals("access")) return false;
-            if (!isAccess && !type.equals("refresh")) return false;
+            if (isAccess && !type.equals("access")) {
+                System.out.println("Access token expected but got: " + type);
+                return false;
+            }
+            if (!isAccess && !type.equals("refresh")) {
+                System.out.println("Refresh token expected but got: " + type);
+                return false;
+            }
 
+            System.out.println("Token validation successful");
             return true;
 
         } catch (JwtException | IllegalArgumentException e) {
+            System.out.println("Token validation failed with exception: " + e.getClass().getSimpleName());
+            System.out.println("Exception message: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -63,6 +85,14 @@ public class JWTUtil {
         long now = System.currentTimeMillis();
         long expiry = isAccess ? accessTokenExpiresIn : refreshTokenExpiresIn;
         String type = isAccess ? "access" : "refresh";
+
+        System.out.println("=== JWT Creation Debug ===");
+        System.out.println("Current time (ms): " + now);
+        System.out.println("Current time (date): " + new Date(now));
+        System.out.println("Expiry duration (ms): " + expiry);
+        System.out.println("Expiration time (ms): " + (now + expiry));
+        System.out.println("Expiration time (date): " + new Date(now + expiry));
+        System.out.println("Token type: " + type);
 
         return Jwts.builder()
                 .claim("sub", username)

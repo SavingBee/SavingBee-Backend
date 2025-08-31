@@ -23,7 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -74,10 +74,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // 로컬 및 서버 도메인 모두 허용
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:5173",           // 로컬 프론트엔드
+            "http://localhost:3000",           // 로컬 리액트 기본 포트
+            "http://34.64.73.53",             // 서버 IP
+            "https://34.64.73.53",            // HTTPS 서버 IP
+            "*"                               // 모든 도메인 허용 (데모용)
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false); // 모든 도메인 허용시 false로 설정
         configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         configuration.setMaxAge(3600L);
 
@@ -128,26 +135,75 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(socialSuccessHandler));
 
-        // 인가
+        // Session 정책 (JWT 사용으로 STATELESS)
+        http
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        // 커스텀 로그인 필터 추가
+        LoginFilter loginFilter = new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler);
+        loginFilter.setFilterProcessesUrl("/login");
+        http
+                .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // JWT Filter 추가
+        http
+                .addFilterBefore(new JWTFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        // 인가 (모든 API 허용 - 개발/테스트용)
         http
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll());
+                        .anyRequest().permitAll()  // 모든 API 허용
+                );
+
+        /*
+        // 인가 (정상적인 JWT 인증 설정) - 운영시 주석 해제
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/jwt/exchange", "/jwt/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                            "/user/exist",
+                            "/user",
+                            "/user/signup/**",
+                            "/user/find-username/**",
+                            "/user/find-password/**",
+                            "/user/reset-password/**",
+                            "/user/verify-code",
+                            "/user/new-password").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/user").hasRole(UserRoleType.USER.name())
+                        .requestMatchers(HttpMethod.PUT, "/user").hasRole(UserRoleType.USER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/user").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/mypage/**").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/user-products/**").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/cart/**").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/recommendations/**").hasRole(UserRoleType.USER.name())
+                        .anyRequest().authenticated()
+                );
+        */
+
+
         /*http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/jwt/exchange", "/jwt/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST,
                             "/user/exist",
                             "/user",
-                            "/user/find-username",
-                            "/user/reset-password",
-                            "/user/find-password",
+                            "/user/signup/**",
+                            "/user/find-username/**",
+                            "/user/find-password/**",
+                            "/user/reset-password/**",
                             "/user/verify-code",
                             "/user/new-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/user").hasRole(UserRoleType.USER.name())
                         .requestMatchers(HttpMethod.PUT, "/user").hasRole(UserRoleType.USER.name())
                         .requestMatchers(HttpMethod.DELETE, "/user").hasRole(UserRoleType.USER.name())
-                        .anyRequest().authenticated()
-                );*/
+                        .requestMatchers("/api/mypage/**").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/user-products/**").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/cart/**").hasRole(UserRoleType.USER.name())
+                        .requestMatchers("/api/recommendations/**").hasRole(UserRoleType.USER.name())
+                    .anyRequest().authenticated()
+                        );
+                    .anyRequest().permitAll());*/
 
         // 예외 처리
         http
@@ -160,17 +216,7 @@ public class SecurityConfig {
                         })
                 );
 
-        // 커스텀 필터 추가 (개발용으로 JWT 필터 비활성화)
-        // http
-        //         .addFilterBefore(new JWTFilter(), LogoutFilter.class);
 
-        http
-                .addFilterBefore(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
-
-        // 세션 필터 설정 (STATELESS)
-        http
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }

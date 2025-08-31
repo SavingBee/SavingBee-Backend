@@ -339,9 +339,26 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
     // 특정 사용자 정보 조회 (username으로)
     @Transactional(readOnly = true)
     public UserResponseDTO getUserInfo(String username) {
-        UserEntity entity = userRepository.findByUsernameAndIsLock(username, false)
+        System.out.println("=== UserService.getUserInfo Debug ===");
+        System.out.println("Looking for username: " + username);
+        
+        Optional<UserEntity> userOptional = userRepository.findByUsernameAndIsLock(username, false);
+        System.out.println("User found: " + userOptional.isPresent());
+        
+        if (userOptional.isEmpty()) {
+            // 잠금된 사용자도 확인해보기
+            Optional<UserEntity> lockedUser = userRepository.findByUsernameAndIsLock(username, true);
+            if (lockedUser.isPresent()) {
+                System.out.println("User exists but is LOCKED: true");
+            } else {
+                System.out.println("User does not exist at all (neither unlocked nor locked)");
+            }
+        }
+        
+        UserEntity entity = userOptional
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저를 찾을 수 없습니다: " + username));
 
+        System.out.println("User info retrieved successfully for: " + username);
         return new UserResponseDTO(username, entity.getIsSocial(), entity.getNickname(), entity.getEmail());
     }
 
