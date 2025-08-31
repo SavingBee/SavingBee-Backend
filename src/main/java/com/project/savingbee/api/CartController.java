@@ -1,6 +1,8 @@
 package com.project.savingbee.api;
 
-import com.project.savingbee.domain.cart.dto.*;
+import com.project.savingbee.domain.cart.dto.CartPageResponseDTO;
+import com.project.savingbee.domain.cart.dto.CartRequestDTO;
+import com.project.savingbee.domain.cart.dto.CartResponseDTO;
 import com.project.savingbee.domain.cart.service.CartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,12 +12,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
 import java.util.Map;
 
 /**
  * 장바구니 관리 API 컨트롤러
- * 관심 상품 담기, 조회, 삭제 및 보유 상품과의 비교 분석 기능 제공
+ * 관심 상품 담기, 조회, 삭제 기능 제공
  */
 @RestController
 @RequestMapping("/api/cart")
@@ -27,6 +29,10 @@ public class CartController {
     
     /**
      * 1. 목록조회(필터/정렬/페이징): 사용자의 장바구니 상품 목록 조회
+     * - 은행명 필터링 지원
+     * - 상품 타입별 필터링 지원  
+     * - 정렬 기준: recent(최근순), interest(금리순)
+     * - 페이징 처리
      */
     @GetMapping
     public ResponseEntity<CartPageResponseDTO> getCartItems(
@@ -38,17 +44,34 @@ public class CartController {
     
     /**
      * 2. 담기: 상품을 장바구니에 추가
+     * - 중복 상품 체크
+     * - 상품 정보 자동 조회 및 저장
      */
     @PostMapping
     public ResponseEntity<CartResponseDTO> addToCart(
             @Validated(CartRequestDTO.AddGroup.class) @RequestBody CartRequestDTO request) {
-        Long userId = getCurrentUserId();
-        CartResponseDTO response = cartService.addToCart(userId, request);
-        return ResponseEntity.status(201).body(response);
+        try {
+            log.info("Cart add request: productCode={}, productType={}", 
+                    request.getProductCode(), request.getProductType());
+            
+            Long userId = getCurrentUserId();
+            log.info("Current user ID: {}", userId);
+            
+            CartResponseDTO response = cartService.addToCart(userId, request);
+            log.info("Cart item added successfully: cartId={}", response.getCartId());
+            
+            return ResponseEntity.status(201).body(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request for adding to cart: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while adding to cart", e);
+            throw e;
+        }
     }
     
     /**
-     * 3. 삭제(단건): 장바구니에서 해당 항목 제거
+     * 3. 삭제(단건): 개별 상품 삭제
      */
     @DeleteMapping("/{cartId}")
     public ResponseEntity<Map<String, String>> removeFromCart(@PathVariable Long cartId) {
@@ -58,7 +81,7 @@ public class CartController {
     }
     
     /**
-     * 4. 선택 삭제(복수): 선택 항목 일괄 삭제
+     * 4. 선택 삭제(복수): 여러 상품 일괄 삭제
      */
     @DeleteMapping("/batch")
     public ResponseEntity<Map<String, Object>> removeMultipleFromCart(
@@ -84,46 +107,7 @@ public class CartController {
         ));
     }
     
-    /**
-     * 6. 요약/통계: 총 담은 상품 수, 최고 금리
-     */
-    @GetMapping("/summary")
-    public ResponseEntity<CartSummaryDTO> getCartSummary() {
-        Long userId = getCurrentUserId();
-        CartSummaryDTO response = cartService.getCartSummary(userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * 7. 보유 상품과 비교: 장바구니 상품 vs 사용자가 등록한 보유 상품 금리/이자 비교(상위 n개)
-     */
-    @GetMapping("/compare")
-    public ResponseEntity<List<CartComparisonDTO>> compareWithUserProducts(
-            @RequestParam(defaultValue = "5") Integer topN) {
-        Long userId = getCurrentUserId();
-        List<CartComparisonDTO> response = cartService.compareWithUserProducts(userId, topN);
-        return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * 8. 최근 담은 순 정렬
-     */
-    @GetMapping("/recent")
-    public ResponseEntity<List<CartResponseDTO>> getCartItemsByRecent() {
-        Long userId = getCurrentUserId();
-        List<CartResponseDTO> response = cartService.getCartItemsByRecent(userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * 9. 은행명 필터
-     */
-    @GetMapping("/bank/{bankName}")
-    public ResponseEntity<List<CartResponseDTO>> getCartItemsByBank(@PathVariable String bankName) {
-        Long userId = getCurrentUserId();
-        List<CartResponseDTO> response = cartService.getCartItemsByBank(userId, bankName);
-        return ResponseEntity.ok(response);
-    }
+
     
     // 현재 사용자 ID 조회 헬퍼 메서드
     private Long getCurrentUserId() {
@@ -132,12 +116,19 @@ public class CartController {
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
         
-        // 실제 프로젝트에서는 JWT 토큰에서 사용자 ID를 추출하는 로직 필요
-        // 현재는 임시로 username을 Long으로 변환 (실제 구현 시 수정 필요)
+        String username = authentication.getName();
+        log.debug("Current username from JWT: {}", username);
+        
+        // username이 "user1004" 형태라면 숫자 부분만 추출
         try {
-            return Long.parseLong(authentication.getName());
+            if (username.startsWith("user")) {
+                return Long.parseLong(username.substring(4)); // "user" 제거 후 숫자 부분만
+            } else {
+                return Long.parseLong(username); // 숫자 형태라면 그대로 변환
+            }
         } catch (NumberFormatException e) {
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다.");
+            log.error("Failed to parse user ID from username: {}", username, e);
+            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다. Username: " + username);
         }
     }
 }
