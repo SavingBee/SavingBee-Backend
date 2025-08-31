@@ -1,7 +1,11 @@
 package com.project.savingbee.filtering.dto;
 
-import java.util.*;
-import lombok.*;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -35,5 +39,26 @@ public class DepositFilterRequest extends BaseFilterRequest {
   // 편의 메서드들
   public boolean hasFilters() {
     return filters != null;
+  }
+
+  // 검색어만 있고 다른 필터 조건은 없는지 체크
+  public boolean hasOnlySearchTerm() {
+    return hasSearchTerm() && isFiltersEmpty();
+  }
+
+  // 모든 필터 조건이 비어있는지 체크
+  private boolean isFiltersEmpty() {
+    if (filters == null) {
+      return true;
+    }
+
+    return (filters.getOrgTypeCode() == null || filters.getOrgTypeCode().isEmpty()) &&
+        (filters.getJoinWay() == null || filters.getJoinWay().isEmpty()) &&
+        (filters.getJoinDeny() == null || filters.getJoinDeny().isEmpty()) &&
+        (filters.getSaveTrm() == null || filters.getSaveTrm().isEmpty()) &&
+        (filters.getIntrRateType() == null || filters.getIntrRateType().isEmpty()) &&
+        filters.getIntrRate() == null &&
+        filters.getIntrRate2() == null &&
+        filters.getMaxLimit() == null;
   }
 }
