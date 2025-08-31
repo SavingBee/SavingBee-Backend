@@ -50,9 +50,24 @@ public class CartController {
     @PostMapping
     public ResponseEntity<CartResponseDTO> addToCart(
             @Validated(CartRequestDTO.AddGroup.class) @RequestBody CartRequestDTO request) {
-        Long userId = getCurrentUserId();
-        CartResponseDTO response = cartService.addToCart(userId, request);
-        return ResponseEntity.status(201).body(response);
+        try {
+            log.info("Cart add request: productCode={}, productType={}", 
+                    request.getProductCode(), request.getProductType());
+            
+            Long userId = getCurrentUserId();
+            log.info("Current user ID: {}", userId);
+            
+            CartResponseDTO response = cartService.addToCart(userId, request);
+            log.info("Cart item added successfully: cartId={}", response.getCartId());
+            
+            return ResponseEntity.status(201).body(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request for adding to cart: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while adding to cart", e);
+            throw e;
+        }
     }
     
     /**
@@ -101,12 +116,19 @@ public class CartController {
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
         
-        // 실제 프로젝트에서는 JWT 토큰에서 사용자 ID를 추출하는 로직 필요
-        // 현재는 임시로 username을 Long으로 변환 (실제 구현 시 수정 필요)
+        String username = authentication.getName();
+        log.debug("Current username from JWT: {}", username);
+        
+        // username이 "user1004" 형태라면 숫자 부분만 추출
         try {
-            return Long.parseLong(authentication.getName());
+            if (username.startsWith("user")) {
+                return Long.parseLong(username.substring(4)); // "user" 제거 후 숫자 부분만
+            } else {
+                return Long.parseLong(username); // 숫자 형태라면 그대로 변환
+            }
         } catch (NumberFormatException e) {
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다.");
+            log.error("Failed to parse user ID from username: {}", username, e);
+            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다. Username: " + username);
         }
     }
 }
