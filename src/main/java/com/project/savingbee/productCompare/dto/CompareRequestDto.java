@@ -22,4 +22,6 @@ public class CompareRequestDto {
 
   @NotNull
   private String intrRateType;  // 단리(S) / 복리(M)
+
+  private String bankKeyword; // optional : 사용자가 입력한 키워드(금융회사명 필터링용)
 }
