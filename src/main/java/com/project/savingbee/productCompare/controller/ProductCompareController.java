@@ -31,6 +31,15 @@ public class ProductCompareController {
     return productCompareService.findFilteredProducts(compareRequestDto, pageable);
   }
 
+  // 반환된 상품 목록에서 사용자가 입력한 키워드(금융회사명)로 필터링
+  @GetMapping("/filter")
+  public PageResponseDto<ProductInfoDto> findBankFilteredProduct(
+      @Valid CompareRequestDto compareRequestDto,
+      @PageableDefault(size = 20) Pageable pageable) {
+
+    return productCompareService.findFilteredProducts(compareRequestDto, pageable);
+  }
+
   // 선택한 두 상품 정보 비교
   @PostMapping
   public CompareResponseDto compareProduct(

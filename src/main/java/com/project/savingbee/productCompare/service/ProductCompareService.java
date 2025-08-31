@@ -5,19 +5,25 @@ import com.project.savingbee.common.entity.DepositProducts;
 import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.DepositInterestRatesRepository;
+import com.project.savingbee.common.repository.FinancialCompaniesRepository;
 import com.project.savingbee.common.repository.SavingsInterestRatesRepository;
 import com.project.savingbee.productCompare.dto.CompareExecuteRequestDto;
 import com.project.savingbee.productCompare.dto.CompareRequestDto;
 import com.project.savingbee.productCompare.dto.CompareResponseDto;
 import com.project.savingbee.productCompare.dto.PageResponseDto;
+import com.project.savingbee.productCompare.dto.PageResponseDto.MatchedBank;
+import com.project.savingbee.productCompare.dto.PageResponseDto.MatchedBankInfo;
 import com.project.savingbee.productCompare.dto.ProductCompareInfosDto;
 import com.project.savingbee.productCompare.dto.ProductInfoDto;
 import com.project.savingbee.productCompare.util.CalcEngine;
 import com.project.savingbee.productCompare.util.CalcEngine.CalcResult;
 import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,12 +35,30 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductCompareService {
   private final DepositInterestRatesRepository depositInterestRatesRepository;
   private final SavingsInterestRatesRepository savingsInterestRatesRepository;
+  private final FinancialCompaniesRepository financialCompaniesRepository;
 
   // 상품 필터링
   public PageResponseDto<ProductInfoDto> findFilteredProducts(CompareRequestDto requestDto, Pageable pageable) {
     List<ProductInfoDto> productInfoDtos = requestDto.getType().equals("D")
         ? findDepositProducts(requestDto)
         : findSavingsProducts(requestDto);
+
+    MatchedBankInfo matchedBankInfo = null;
+
+    // BankKeyword가 있을 경우
+    if (requestDto.getBankKeyword() != null) {
+      String keyword = normalizeKeyword(requestDto.getBankKeyword());
+
+      // BankKeyword가 포함되는 금융회사명 목록
+      List<MatchedBank> matchedBanks =
+          financialCompaniesRepository.findByKorCoNmContainingOrderByFinCoNo(keyword);
+
+      matchedBankInfo = new MatchedBankInfo(requestDto.getBankKeyword(), matchedBanks);
+
+      // BankKeyword가 포함되는 금융회사명으로 필터링
+      productInfoDtos = productInfoDtos.stream()
+          .filter(p -> p.getBankName().contains(keyword)).toList();
+    }
 
     // 우대금리 내림차순(null일 경우 기본금리를 비교), 동률일 경우 상품코드 오름차순
     Comparator<ProductInfoDto> intrRate2Desc =
@@ -46,7 +70,7 @@ public class ProductCompareService {
 
     List<ProductInfoDto> sorted = productInfoDtos.stream().sorted(intrRate2Desc).toList();
 
-    return PageResponseDto.fromList(sorted, pageable);
+    return PageResponseDto.fromList(sorted, pageable, matchedBankInfo);
   }
 
   // 예금 필터링
@@ -215,5 +239,12 @@ public class ProductCompareService {
           .intrRateType(r.getIntrRateType())
           .build();
     }).toList();
+  }
+
+  // 입력받은 키워드를 정규화
+  private String normalizeKeyword(String keyword) {
+    return Normalizer.normalize(keyword, Form.NFKC)
+        .toUpperCase(Locale.ROOT) // 소문자 -> 대문자
+        .replaceAll("\\s+", ""); // 모든 공백 제거
   }
 }
