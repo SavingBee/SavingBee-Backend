@@ -60,4 +60,29 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
     
     // 상품 타입별 필터링
     List<Cart> findByUserIdAndProductType(Long userId, Cart.ProductType productType);
+    
+    // 상품 타입별 필터링 + 페이징 (최근순)
+    Page<Cart> findByUserIdAndProductTypeOrderByCreatedAtDesc(Long userId, Cart.ProductType productType, Pageable pageable);
+    
+    // 상품 타입별 필터링 + 페이징 (금리순)  
+    @Query("SELECT c FROM Cart c WHERE c.userId = :userId AND c.productType = :productType ORDER BY c.maxInterestRate DESC")
+    Page<Cart> findByUserIdAndProductTypeOrderByMaxInterestRateDesc(@Param("userId") Long userId, @Param("productType") Cart.ProductType productType, Pageable pageable);
+    
+    // 은행명 + 상품타입 필터링 + 페이징 (최근순)
+    Page<Cart> findByUserIdAndBankNameContainingIgnoreCaseAndProductTypeOrderByCreatedAtDesc(
+        Long userId, String bankName, Cart.ProductType productType, Pageable pageable);
+        
+    // 은행명 + 상품타입 필터링 + 페이징 (금리순)
+    @Query("SELECT c FROM Cart c WHERE c.userId = :userId AND UPPER(c.bankName) LIKE UPPER(CONCAT('%', :bankName, '%')) AND c.productType = :productType ORDER BY c.maxInterestRate DESC")
+    Page<Cart> findByUserIdAndBankNameContainingIgnoreCaseAndProductTypeOrderByMaxInterestRateDesc(
+        @Param("userId") Long userId, @Param("bankName") String bankName, @Param("productType") Cart.ProductType productType, Pageable pageable);
+        
+    // 금리순 정렬 + 페이징
+    @Query("SELECT c FROM Cart c WHERE c.userId = :userId ORDER BY c.maxInterestRate DESC")
+    Page<Cart> findByUserIdOrderByMaxInterestRateDesc(@Param("userId") Long userId, Pageable pageable);
+    
+    // 은행명 필터링 + 금리순 정렬 + 페이징
+    @Query("SELECT c FROM Cart c WHERE c.userId = :userId AND UPPER(c.bankName) LIKE UPPER(CONCAT('%', :bankName, '%')) ORDER BY c.maxInterestRate DESC")
+    Page<Cart> findByUserIdAndBankNameContainingIgnoreCaseOrderByMaxInterestRateDesc(
+        @Param("userId") Long userId, @Param("bankName") String bankName, Pageable pageable);
 }
