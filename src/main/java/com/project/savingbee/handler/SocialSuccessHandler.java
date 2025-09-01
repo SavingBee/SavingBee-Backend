@@ -18,9 +18,11 @@ import java.io.IOException;
 public class SocialSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService;
+    private final JWTUtil jwtUtil;
 
-    public SocialSuccessHandler(JwtService jwtService) {
+    public SocialSuccessHandler(JwtService jwtService, JWTUtil jwtUtil) {
         this.jwtService = jwtService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -31,7 +33,7 @@ public class SocialSuccessHandler implements AuthenticationSuccessHandler {
         String role = authentication.getAuthorities().iterator().next().getAuthority();
 
         // JWT(Refresh) 발급
-        String refreshToken = JWTUtil.createJWT(username, "ROLE_" + role, false);
+        String refreshToken = jwtUtil.createJWT(username, "ROLE_" + role, false);
 
         // 발급한 Refresh DB 테이블 저장 (Refresh whitelist)
         jwtService.addRefresh(username, refreshToken);
@@ -41,7 +43,7 @@ public class SocialSuccessHandler implements AuthenticationSuccessHandler {
         refreshCookie.setHttpOnly(true);
         refreshCookie.setSecure(false);
         refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(10); // 10초 (프론트에서 발급 후 바로 헤더 전환 로직 진행 예정)
+        refreshCookie.setMaxAge(604800); // 7일 (프론트에서 발급 후 바로 헤더 전환 로직 진행 예정)
 
         response.addCookie(refreshCookie);
         response.sendRedirect("http://localhost:5173/cookie");

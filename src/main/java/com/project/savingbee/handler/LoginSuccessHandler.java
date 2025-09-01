@@ -19,9 +19,11 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 
     private final JwtService jwtService;
+    private final JWTUtil jwtUtil;
 
-    public LoginSuccessHandler(JwtService jwtService) {
+    public LoginSuccessHandler(JwtService jwtService, JWTUtil jwtUtil) {
         this.jwtService = jwtService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -36,8 +38,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         System.out.println("Role: " + role);
 
         // JWT(Access/Refresh) 발급
-        String accessToken = JWTUtil.createJWT(username, role, true);
-        String refreshToken = JWTUtil.createJWT(username, role, false);
+        String accessToken = jwtUtil.createJWT(username, role, true);
+        String refreshToken = jwtUtil.createJWT(username, role, false);
         
         System.out.println("Access token created: " + accessToken.substring(0, Math.min(20, accessToken.length())) + "...");
         System.out.println("Refresh token created: " + refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
