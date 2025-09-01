@@ -159,7 +159,7 @@ public class MyPageController {
      */
     @PostMapping(value = "/products", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> addOwnedProduct(
-            @RequestBody UserProductRequestDTO dto,
+            @Validated(UserProductRequestDTO.CreateGroup.class) @RequestBody UserProductRequestDTO dto,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         System.out.println("=== MyPageController.addOwnedProduct Debug ===");
@@ -173,22 +173,7 @@ public class MyPageController {
         // 현재 로그인한 사용자 정보 설정
         dto.setUsername(userDetails.getUsername());
         
-        // 간단한 검증
-        if (dto.getBankName() == null || dto.getBankName().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "은행명은 필수입니다."));
-        }
-        
-        if (dto.getProductName() == null || dto.getProductName().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "상품명은 필수입니다."));
-        }
-        
-        if (dto.getDepositAmount() == null || dto.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            return ResponseEntity.badRequest().body(Map.of("error", "금액은 0보다 커야 합니다."));
-        }
-        
-        if (dto.getInterestRate() == null || dto.getInterestRate().compareTo(BigDecimal.ZERO) < 0) {
-            return ResponseEntity.badRequest().body(Map.of("error", "금리는 0 이상이어야 합니다."));
-        }
+        // @Valid 검증으로 대체되어 수동 검증 제거
         
         Long userProductId = userProductService.addUserProduct(dto);
         
