@@ -41,12 +41,12 @@ public class SocialSuccessHandler implements AuthenticationSuccessHandler {
         // 응답
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false);
+        refreshCookie.setSecure(false); //true면 https만 가능 false면 http, https 둘다 가능
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(604800); // 7일 (프론트에서 발급 후 바로 헤더 전환 로직 진행 예정)
 
         response.addCookie(refreshCookie);
-        response.sendRedirect("http://localhost:5173/cookie");
+        response.sendRedirect("http://localhost:5173/cookie"); // 이부분에 프론트엔드 서버 주소 등록해야함
     }
 
 }

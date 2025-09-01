@@ -5,6 +5,7 @@ import com.project.savingbee.domain.user.entity.UserRoleType;
 import com.project.savingbee.filter.JWTFilter;
 import com.project.savingbee.filter.LoginFilter;
 import com.project.savingbee.handler.RefreshTokenLogoutHandler;
+import com.project.savingbee.util.JWTUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -41,18 +42,21 @@ public class SecurityConfig {
     private final AuthenticationSuccessHandler socialSuccessHandler;
     private final JwtService jwtService;
     private final JWTFilter jwtFilter;
+    private final JWTUtil jwtUtil;
 
     public SecurityConfig(AuthenticationConfiguration authenticationConfiguration,
                           @Qualifier("LoginSuccessHandler") AuthenticationSuccessHandler loginSuccessHandler,
                           @Qualifier("SocialSuccessHandler") AuthenticationSuccessHandler socialSuccessHandler,
                           JwtService jwtService,
-                          JWTFilter jwtFilter
+                          JWTFilter jwtFilter,
+                          JWTUtil jwtUtil
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
         this.socialSuccessHandler = socialSuccessHandler;
         this.jwtService = jwtService;
         this.jwtFilter = jwtFilter;
+        this.jwtUtil = jwtUtil;
     }
 
     // 커스텀 자체 로그인 필터를 위한 AuthenticationManager Bean 수동 등록
@@ -124,7 +128,7 @@ public class SecurityConfig {
         // 기본 로그아웃 필터 + 커스텀 Refresh 토큰 삭제 핸들러 추가
         http
                 .logout(logout -> logout
-                        .addLogoutHandler(new RefreshTokenLogoutHandler(jwtService)));
+                        .addLogoutHandler(new RefreshTokenLogoutHandler(jwtService, jwtUtil)));
 
         // 기본 Form 기반 인증 필터들 disable
         http
