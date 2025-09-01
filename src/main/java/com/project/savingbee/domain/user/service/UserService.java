@@ -247,6 +247,21 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
             throw new AccessDeniedException("본인 혹은 관리자만 삭제할 수 있습니다.");
         }
 
+        // 사용자 정보 조회
+        UserEntity entity = userRepository.findByUsernameAndIsLock(dto.getUsername(), false)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 자체 로그인 사용자의 경우 비밀번호 확인 (관리자 제외)
+        if (!entity.getIsSocial() && !isAdmin) {
+            if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+                throw new IllegalArgumentException("회원 탈퇴를 위해 비밀번호 확인이 필요합니다.");
+            }
+            
+            if (!passwordEncoder.matches(dto.getPassword(), entity.getPassword())) {
+                throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            }
+        }
+
         // 유저 제거
         userRepository.deleteByUsername(dto.getUsername());
 

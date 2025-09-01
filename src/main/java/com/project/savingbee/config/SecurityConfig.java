@@ -74,17 +74,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 로컬 및 서버 도메인 모두 허용
+        // 특정 도메인만 허용 (보안 강화)
         configuration.setAllowedOrigins(List.of(
             "http://localhost:5173",           // 로컬 프론트엔드
             "http://localhost:3000",           // 로컬 리액트 기본 포트
             "http://34.64.73.53",             // 서버 IP
-            "https://34.64.73.53",            // HTTPS 서버 IP
-            "*"                               // 모든 도메인 허용 (데모용)
+            "https://34.64.73.53"             // HTTPS 서버 IP
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false); // 모든 도메인 허용시 false로 설정
+        configuration.setAllowCredentials(true); // 특정 도메인 허용시 true로 설정
         configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         configuration.setMaxAge(3600L);
 
