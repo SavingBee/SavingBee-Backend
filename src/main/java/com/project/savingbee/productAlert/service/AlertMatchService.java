@@ -174,22 +174,15 @@ public class AlertMatchService {
     String prdCode = product.getFinPrdtCd();
     Integer maxSaveTerm = setting.getMaxSaveTerm();
     List<String> intRate = settingTypes(setting);
-    List<String> rsrvType = settingRsrvTypes(setting);
     Optional<SavingsInterestRates> o;
 
     if (maxSaveTerm == null) return false;  // 기간은 필수 설정 값
 
-    // 이자계산방식, 적립방식 둘 다 설정 시
-    if (intRate.size() == 1 && rsrvType.size() == 1) {
-      o = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInAndRsrvTypeInOrderByIntrRate2DescIntrRateDesc(
-          prdCode, maxSaveTerm, intRate, rsrvType);
-    } else if (intRate.size() == 1) {               // 이자계산방식만 설정 시
+    // 이자계산방식 설정 시
+    if (intRate.size() == 1) {
       o = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInOrderByIntrRate2DescIntrRateDesc(
           prdCode, maxSaveTerm, intRate);
-    } else if (rsrvType.size() == 1) {           // 적립방식만 설정 시
-      o = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndRsrvTypeInOrderByIntrRate2DescIntrRateDesc(
-          prdCode, maxSaveTerm, rsrvType);
-    } else {                                                      // 둘 다 미설정(혹은 모두 설정) 시
+    } else {
       o = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmOrderByIntrRate2DescIntrRateDesc(
           prdCode, maxSaveTerm);
     }
@@ -262,14 +255,6 @@ public class AlertMatchService {
     return list;
   }
 
-  // 적립방식(정액적립/자유적립) 설정 조건 확인
-  private List<String> settingRsrvTypes(ProductAlertSetting setting) {
-    ArrayList<String> list = new ArrayList<>();
-    if (Boolean.TRUE.equals(setting.getRsrvTypeFixed()))    list.add("S");
-    if (Boolean.TRUE.equals(setting.getRsrvTypeFlexible())) list.add("F");
-    return list;
-  }
-
   // 예치 금액 설정값이 상품 값 범위에 포함 되는 지 확인
   private boolean contains(Long settingMin, Long settingMax, Long productMin, Long productMax) {
     // 최소 가입금액 설정 시
@@ -318,18 +303,12 @@ public class AlertMatchService {
   private LocalDateTime versionForSavings(SavingsProducts products, ProductAlertSetting setting) {
     Integer term = setting.getMaxSaveTerm();
     List<String> intrTypes = settingTypes(setting);         // 이자유형 S/M
-    List<String> rsrvTypes = settingRsrvTypes(setting);     // 적립방식 S/F
 
     Optional<SavingsInterestRates> latest;
-    if (intrTypes.size()==1 && rsrvTypes.size()==1) {
-      latest = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInAndRsrvTypeInOrderByUpdatedAtDesc(
-          products.getFinPrdtCd(), term, intrTypes, rsrvTypes);
-    } else if (intrTypes.size()==1) {
+
+    if (intrTypes.size()==1) {
       latest = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInOrderByUpdatedAtDesc(
           products.getFinPrdtCd(), term, intrTypes);
-    } else if (rsrvTypes.size()==1) {
-      latest = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndRsrvTypeInOrderByUpdatedAtDesc(
-          products.getFinPrdtCd(), term, rsrvTypes);
     } else {
       latest = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmOrderByUpdatedAtDesc(
           products.getFinPrdtCd(), term);

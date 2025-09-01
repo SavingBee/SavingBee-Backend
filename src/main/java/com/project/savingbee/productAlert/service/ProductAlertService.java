@@ -51,8 +51,6 @@ public class ProductAlertService {
         .maxSaveTerm(alertSettingsRequestDto.getMaxSaveTerm())
         .minAmount(alertSettingsRequestDto.getMinAmount())
         .maxLimit(alertSettingsRequestDto.getMaxLimit())
-        .rsrvTypeFlexible(Boolean.TRUE.equals(alertSettingsRequestDto.getRsrvTypeFlexible()))
-        .rsrvTypeFixed(Boolean.TRUE.equals(alertSettingsRequestDto.getRsrvTypeFixed()))
         .build();
 
     return new AlertSettingsResponseDto(productAlertSettingRepository.save(productAlertSetting));
@@ -88,10 +86,6 @@ public class ProductAlertService {
       productAlertSetting.setMinAmount(alertSettingsRequestDto.getMinAmount()); }
     if (alertSettingsRequestDto.getMaxLimit() != null) {
       productAlertSetting.setMaxLimit(alertSettingsRequestDto.getMaxLimit()); }
-    if (alertSettingsRequestDto.getRsrvTypeFlexible() != null) {
-      productAlertSetting.setRsrvTypeFlexible(alertSettingsRequestDto.getRsrvTypeFlexible()); }
-    if (alertSettingsRequestDto.getRsrvTypeFixed() != null) {
-      productAlertSetting.setRsrvTypeFixed(alertSettingsRequestDto.getRsrvTypeFixed()); }
 
     return new AlertSettingsResponseDto(productAlertSettingRepository.save(productAlertSetting));
   }

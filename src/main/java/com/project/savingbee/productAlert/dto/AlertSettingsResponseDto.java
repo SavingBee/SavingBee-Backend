@@ -29,9 +29,6 @@ public class AlertSettingsResponseDto {
   private BigInteger minAmount;
   private BigInteger maxLimit;
 
-  private boolean rsrvTypeFlexible;
-  private boolean rsrvTypeFixed;
-
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
@@ -46,8 +43,6 @@ public class AlertSettingsResponseDto {
     this.maxSaveTerm = productAlertSetting.getMaxSaveTerm();
     this.minAmount = productAlertSetting.getMinAmount();
     this.maxLimit = productAlertSetting.getMaxLimit();
-    this.rsrvTypeFlexible = productAlertSetting.getRsrvTypeFlexible();
-    this.rsrvTypeFixed = productAlertSetting.getRsrvTypeFixed();
     this.createdAt = productAlertSetting.getCreatedAt();
     this.updatedAt = productAlertSetting.getUpdatedAt();
   }
@@ -62,11 +57,9 @@ public class AlertSettingsResponseDto {
         null,
         false,
         false,
-        1,
+        6,
         null,
         null,
-        false,
-        false,
         null,
         null
     );

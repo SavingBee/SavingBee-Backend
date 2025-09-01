@@ -32,8 +32,4 @@ public class AlertSettingsRequestDto {
   private BigInteger minAmount;
   @PositiveOrZero
   private BigInteger maxLimit;
-
-  private Boolean rsrvTypeFlexible;
-  private Boolean rsrvTypeFixed;
-
 }
