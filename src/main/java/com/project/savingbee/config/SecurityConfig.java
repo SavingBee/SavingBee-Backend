@@ -13,6 +13,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -92,12 +93,13 @@ public class SecurityConfig {
         return source;
     }
 
-    // 비회원도 사용할 수 있는 공개 API(compare)용 보안 체인
+    // 비회원도 사용할 수 있는 공개 API용 보안 체인
     @Bean
     @Order(1)
     SecurityFilterChain publicApis(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/api/compare", "/api/compare/**","/products/**")
+            .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(a -> a.anyRequest().permitAll());
         return http.build();
