@@ -17,9 +17,11 @@ import java.io.IOException;
 public class RefreshTokenLogoutHandler implements LogoutHandler {
 
     private final JwtService jwtService;
+    private final JWTUtil jwtUtil;
 
-    public RefreshTokenLogoutHandler(JwtService jwtService) {
+    public RefreshTokenLogoutHandler(JwtService jwtService, JWTUtil jwtUtil) {
         this.jwtService = jwtService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -38,7 +40,7 @@ public class RefreshTokenLogoutHandler implements LogoutHandler {
             if (refreshToken == null) {
                 return;
             }
-            Boolean isValid = JWTUtil.isValid(refreshToken, false);
+            Boolean isValid = jwtUtil.isValid(refreshToken, false);
             if (!isValid) {
                 return;
             }

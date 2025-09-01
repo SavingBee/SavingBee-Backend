@@ -13,9 +13,11 @@ import java.util.Map;
 public class AuthController {
 
     private final JwtService jwtService;
+    private final JWTUtil jwtUtil;
 
-    public AuthController(JwtService jwtService) {
+    public AuthController(JwtService jwtService, JWTUtil jwtUtil) {
         this.jwtService = jwtService;
+        this.jwtUtil = jwtUtil;
     }
 
     // 로그아웃 API
@@ -29,7 +31,7 @@ public class AuthController {
                 String refreshToken = requestBody.get("refreshToken");
                 
                 // Refresh Token 유효성 검증
-                if (refreshToken != null && JWTUtil.isValid(refreshToken, false)) {
+                if (refreshToken != null && jwtUtil.isValid(refreshToken, false)) {
                     jwtService.removeRefresh(refreshToken);
                 }
             }
