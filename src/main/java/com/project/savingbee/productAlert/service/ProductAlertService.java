@@ -9,8 +9,10 @@ import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +30,13 @@ public class ProductAlertService {
   // 상품 알림 조건 설정
   @Transactional
   public AlertSettingsResponseDto createAlertSettings(
-      Long userId, AlertSettingsRequestDto alertSettingsRequestDto) throws BadRequestException {
+      Long userId, AlertSettingsRequestDto alertSettingsRequestDto) throws Exception {
+
+    // 알림은 사용자 당 하나만 설정 가능
+    if (productAlertSettingRepository.findByUserId(userId).isPresent()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "alert setting is already exists!");
+    }
 
     validate(alertSettingsRequestDto);
 
