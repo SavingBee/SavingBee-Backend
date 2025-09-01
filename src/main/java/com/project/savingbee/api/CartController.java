@@ -28,10 +28,8 @@ public class CartController {
     private final CartService cartService;
     
     /**
-     * 1. 목록조회(필터/정렬/페이징): 사용자의 장바구니 상품 목록 조회
+     * 1. 목록조회(필터/페이징): 사용자의 장바구니 상품 목록 조회
      * - 은행명 필터링 지원
-     * - 상품 타입별 필터링 지원  
-     * - 정렬 기준: recent(최근순), interest(금리순)
      * - 페이징 처리
      */
     @GetMapping

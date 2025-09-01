@@ -34,8 +34,6 @@ public class CartRequestDTO {
     
     // 필터링 파라미터
     private String bankName; // 은행명 필터 (선택사항)
-    private Cart.ProductType filterProductType; // 상품 타입 필터 (DEPOSIT, SAVINGS)
-    private String sortBy = "recent"; // 정렬 기준 (recent, interest)
     
     // 페이징 파라미터
     private Integer page = 0; // 페이지 번호 (기본값: 0)
