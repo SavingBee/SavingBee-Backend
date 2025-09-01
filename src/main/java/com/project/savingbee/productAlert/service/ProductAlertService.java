@@ -90,6 +90,17 @@ public class ProductAlertService {
     return new AlertSettingsResponseDto(productAlertSettingRepository.save(productAlertSetting));
   }
 
+  // 개발/테스트용
+  @Transactional
+  public void deleteAlertSettings(Long userId) {
+    productAlertSettingRepository.deleteByUserId(userId);
+
+  }
+  @Transactional
+  public void deleteAllAlertSettings() {
+    productAlertSettingRepository.deleteAll();
+  }
+
   // 유효성 검증
   private void validate(AlertSettingsRequestDto dto)
       throws BadRequestException {
