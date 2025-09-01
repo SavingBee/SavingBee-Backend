@@ -109,7 +109,7 @@ class ProductAlertServiceTest {
 
   @Test
   @DisplayName("알림 조건 설정 성공")
-  void successCreateAlertSettings() throws BadRequestException {
+  void successCreateAlertSettings() throws Exception {
       //given
     long userId = 3L;
 

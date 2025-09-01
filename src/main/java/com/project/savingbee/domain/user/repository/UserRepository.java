@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     
     @Transactional
     void deleteByUsername(String username);
+
+    // username으로 사용자 찾기
+    Optional<UserEntity> findByUsername(String username);
 }
