@@ -18,7 +18,16 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class JWTFilter extends OncePerRequestFilter {
+
+    private final JWTUtil jwtUtil;
+
+    public JWTFilter(JWTUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -50,13 +59,13 @@ public class JWTFilter extends OncePerRequestFilter {
             return;
         }
 
-        boolean isTokenValid = JWTUtil.isValid(accessToken, true);
+        boolean isTokenValid = jwtUtil.isValid(accessToken, true);
         System.out.println("Token Valid: " + isTokenValid);
 
         if (isTokenValid) {
             try {
-                String username = JWTUtil.getUsername(accessToken);
-                String role = JWTUtil.getRole(accessToken);
+                String username = jwtUtil.getUsername(accessToken);
+                String role = jwtUtil.getRole(accessToken);
                 
                 System.out.println("Username from token: " + username);
                 System.out.println("Role from token: " + role);

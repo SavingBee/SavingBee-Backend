@@ -3,39 +3,44 @@ package com.project.savingbee.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+@Component
 public class JWTUtil {
 
-    private static final SecretKey secretKey;
-    private static final Long accessTokenExpiresIn;
-    private static final Long refreshTokenExpiresIn;
+    private static SecretKey secretKey;
+    private static Long accessTokenExpiresIn;
+    private static Long refreshTokenExpiresIn;
 
-    static  {
-        String secretKeyString = "himynameissavingbeenicetomeetyou";
-        secretKey = new SecretKeySpec(secretKeyString.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
-
-        // 개발용으로 24시간 설정 (운영시에는 1-2시간 권장)
-        accessTokenExpiresIn = 24 * 3600L * 1000; // 24시간 (개발용)
-        refreshTokenExpiresIn = 604800L * 1000; // 7일
+    // @Value를 통해 설정 파일에서 값 주입
+    public JWTUtil(@Value("${spring.jwt.secret}") String secretKeyString,
+                   @Value("${jwt.access-token.expire-time}") Long accessExpireTime,
+                   @Value("${jwt.refresh-token.expire-time}") Long refreshExpireTime) {
+        
+        secretKey = new SecretKeySpec(secretKeyString.getBytes(StandardCharsets.UTF_8), 
+                                    Jwts.SIG.HS256.key().build().getAlgorithm());
+        accessTokenExpiresIn = accessExpireTime;
+        refreshTokenExpiresIn = refreshExpireTime;
     }
 
     // JWT 클레임 username 파싱
-    public static String getUsername(String token) {
+    public String getUsername(String token) {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("sub", String.class);
     }
 
     // JWT 클레임 role 파싱
-    public static String getRole(String token) {
+    public String getRole(String token) {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("role", String.class);
     }
 
     // JWT 유효 여부 (위조, 시간, Access/Refresh 여부)
-    public static Boolean isValid(String token, Boolean isAccess) {
+    public Boolean isValid(String token, Boolean isAccess) {
         try {  /*try 하는 이유: {Claims ... retrun false;}를 파싱하는 과정에서 시간이 다되었다면 자동으로 JwtException이 던져지기 때문에
             이것을 잡을 수 있도록하기 위함*/
             System.out.println("=== JWTUtil.isValid Debug ===");
@@ -80,7 +85,7 @@ public class JWTUtil {
     }
 
     // JWT(Access/Refresh) 생성
-    public static String createJWT(String username, String role, Boolean isAccess) {
+    public String createJWT(String username, String role, Boolean isAccess) {
 
         long now = System.currentTimeMillis();
         long expiry = isAccess ? accessTokenExpiresIn : refreshTokenExpiresIn;

@@ -15,9 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class JwtService {
 
     private final RefreshRepository refreshRepository;
+    private final JWTUtil jwtUtil;
 
-    public JwtService(RefreshRepository refreshRepository) {
+    public JwtService(RefreshRepository refreshRepository, JWTUtil jwtUtil) {
         this.refreshRepository = refreshRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     // 소셜 로그인 성공 후 쿠키(Refresh) -> 헤더 방식으로 응답 <-- 이건 추후에 작성
@@ -47,18 +49,18 @@ public class JwtService {
         }
 
         // Refresh 토큰 검증
-        Boolean isValid = JWTUtil.isValid(refreshToken, false);
+        Boolean isValid = jwtUtil.isValid(refreshToken, false);
         if (!isValid) {
             throw new RuntimeException("유효하지 않은 refreshToken입니다.");
         }
 
         // 정보 추출
-        String username = JWTUtil.getUsername(refreshToken);
-        String role = JWTUtil.getRole(refreshToken);
+        String username = jwtUtil.getUsername(refreshToken);
+        String role = jwtUtil.getRole(refreshToken);
 
         // 토큰 생성
-        String newAccessToken = JWTUtil.createJWT(username, role, true);
-        String newRefreshToken = JWTUtil.createJWT(username, role, false);
+        String newAccessToken = jwtUtil.createJWT(username, role, true);
+        String newRefreshToken = jwtUtil.createJWT(username, role, false);
 
         // 기존 Refresh 토큰 DB 삭제 후 신규 추가
         RefreshEntity newRefreshEntity = RefreshEntity.builder()
@@ -87,18 +89,18 @@ public class JwtService {
         String refreshToken = dto.getRefreshToken();
 
         // Refresh 토큰 검증
-        Boolean isValid = JWTUtil.isValid(refreshToken, false);
+        Boolean isValid = jwtUtil.isValid(refreshToken, false);
         if (!isValid) {
             throw new RuntimeException("유효하지 않은 refreshToken입니다.");
         }
 
         // 정보 추출
-        String username = JWTUtil.getUsername(refreshToken);
-        String role = JWTUtil.getRole(refreshToken);
+        String username = jwtUtil.getUsername(refreshToken);
+        String role = jwtUtil.getRole(refreshToken);
 
         // 토큰 생성
-        String newAccessToken = JWTUtil.createJWT(username, role, true);
-        String newRefreshToken = JWTUtil.createJWT(username, role, false);
+        String newAccessToken = jwtUtil.createJWT(username, role, true);
+        String newRefreshToken = jwtUtil.createJWT(username, role, false);
 
         // 기존 Refresh 토큰 DB 삭제 후 신규 추가
         RefreshEntity newRefreshEntity = RefreshEntity.builder()
