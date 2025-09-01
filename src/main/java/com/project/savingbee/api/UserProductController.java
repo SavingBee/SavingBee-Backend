@@ -7,8 +7,7 @@ import com.project.savingbee.domain.userproduct.service.UserProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,7 +69,7 @@ public class UserProductController {
     @PutMapping("/{userProductId}")
     public ResponseEntity<UserProductResponseDTO> updateUserProduct(
             @PathVariable Long userProductId,
-            @Validated(UserProductRequestDTO.UpdateGroup.class) @RequestBody UserProductRequestDTO request,
+            @Validated(UserProductRequestDTO.PartialUpdateGroup.class) @RequestBody UserProductRequestDTO request,
             @RequestParam(defaultValue = "1") Long userId) {
         log.info("보유 상품 수정 요청 - userProductId: {}, userId: {}", userProductId, userId);
         UserProductResponseDTO response = userProductService.updateUserProductById(userId, userProductId, request);
