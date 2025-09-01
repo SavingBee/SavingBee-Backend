@@ -32,9 +32,8 @@ public class CartService {
     private final SavingsInterestRatesRepository savingsRatesRepository;
     
     /**
-     * 1. 목록조회 (필터/정렬/페이징): 사용자의 장바구니 상품 목록 조회
-     * - 은행명 필터링, 상품 타입 필터링 지원
-     * - 정렬: recent(최근순), interest(금리순)
+     * 1. 목록조회 (필터/페이징): 사용자의 장바구니 상품 목록 조회
+     * - 은행명 필터링 지원
      * - 페이징 처리
      */
     public CartPageResponseDTO getCartItems(Long userId, CartRequestDTO request) {
@@ -42,48 +41,16 @@ public class CartService {
         Page<Cart> cartPage;
         
         String bankName = request.getBankName();
-        Cart.ProductType filterProductType = request.getFilterProductType();
-        String sortBy = request.getSortBy() != null ? request.getSortBy() : "recent";
-        
         boolean hasBankFilter = bankName != null && !bankName.trim().isEmpty();
-        boolean hasProductTypeFilter = filterProductType != null;
-        boolean isInterestSort = "interest".equals(sortBy);
         
-        // 필터링 + 정렬 조합에 따른 쿼리 선택
-        if (hasBankFilter && hasProductTypeFilter) {
-            // 은행명 + 상품타입 필터링
-            if (isInterestSort) {
-                cartPage = cartRepository.findByUserIdAndBankNameContainingIgnoreCaseAndProductTypeOrderByMaxInterestRateDesc(
-                    userId, bankName, filterProductType, pageable);
-            } else {
-                cartPage = cartRepository.findByUserIdAndBankNameContainingIgnoreCaseAndProductTypeOrderByCreatedAtDesc(
-                    userId, bankName, filterProductType, pageable);
-            }
-        } else if (hasBankFilter) {
-            // 은행명만 필터링
-            if (isInterestSort) {
-                cartPage = cartRepository.findByUserIdAndBankNameContainingIgnoreCaseOrderByMaxInterestRateDesc(
-                    userId, bankName, pageable);
-            } else {
-                cartPage = cartRepository.findByUserIdAndBankNameContainingIgnoreCaseOrderByCreatedAtDesc(
-                    userId, bankName, pageable);
-            }
-        } else if (hasProductTypeFilter) {
-            // 상품타입만 필터링
-            if (isInterestSort) {
-                cartPage = cartRepository.findByUserIdAndProductTypeOrderByMaxInterestRateDesc(
-                    userId, filterProductType, pageable);
-            } else {
-                cartPage = cartRepository.findByUserIdAndProductTypeOrderByCreatedAtDesc(
-                    userId, filterProductType, pageable);
-            }
+        // 은행명 필터링 여부에 따른 쿼리 선택
+        if (hasBankFilter) {
+            // 은행명 필터링
+            cartPage = cartRepository.findByUserIdAndBankNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                userId, bankName, pageable);
         } else {
-            // 필터링 없음
-            if (isInterestSort) {
-                cartPage = cartRepository.findByUserIdOrderByMaxInterestRateDesc(userId, pageable);
-            } else {
-                cartPage = cartRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-            }
+            // 필터링 없음 - 기본 정렬(최근 담은 순)
+            cartPage = cartRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         }
         
         List<CartResponseDTO> content = cartPage.getContent().stream()
