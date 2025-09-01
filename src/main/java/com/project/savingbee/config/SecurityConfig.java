@@ -81,7 +81,7 @@ public class SecurityConfig {
             "http://34.64.73.53",             // 서버 IP
             "https://34.64.73.53"             // HTTPS 서버 IP
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // 특정 도메인 허용시 true로 설정
         configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
