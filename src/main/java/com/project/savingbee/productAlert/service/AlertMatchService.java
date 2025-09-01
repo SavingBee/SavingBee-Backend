@@ -16,6 +16,7 @@ import com.project.savingbee.common.repository.ProductAlertEventRepository;
 import com.project.savingbee.common.repository.ProductAlertSettingRepository;
 import com.project.savingbee.common.repository.SavingsInterestRatesRepository;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
+import com.project.savingbee.domain.user.entity.UserEntity;
 import com.project.savingbee.productAlert.util.DedupeKey;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -55,6 +56,13 @@ public class AlertMatchService {
     List<ProductAlertSetting> productAlertSettings = productAlertSettingRepository.findAll();
 
     for (ProductAlertSetting setting : productAlertSettings) {
+      // 알림 OFF, 스캔 X
+      UserEntity user = setting.getUserEntity();
+      if (user == null || !Boolean.TRUE.equals(user.getAlarm())) {
+        setting.setLastEvaluatedAt(now.minusSeconds(1));
+        continue;
+      }
+
       // 현재 User 정보에 전화번호가 없으므로, SMS 설정 시 스캔 X
       if (setting.getAlertType() == AlertType.SMS) {
         setting.setLastEvaluatedAt(now.minusSeconds(1));

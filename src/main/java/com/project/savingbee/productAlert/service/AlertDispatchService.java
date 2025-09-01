@@ -2,8 +2,10 @@ package com.project.savingbee.productAlert.service;
 
 import com.project.savingbee.common.entity.ProductAlertEvent;
 import com.project.savingbee.common.entity.ProductAlertEvent.EventStatus;
+import com.project.savingbee.common.entity.ProductAlertSetting;
 import com.project.savingbee.common.entity.ProductAlertSetting.AlertType;
 import com.project.savingbee.common.repository.ProductAlertEventRepository;
+import com.project.savingbee.domain.user.entity.UserEntity;
 import com.project.savingbee.productAlert.channel.compose.AlertMessage;
 import com.project.savingbee.productAlert.channel.compose.AlertMessageComposer;
 import com.project.savingbee.productAlert.channel.exception.NonRetryableChannelException;
@@ -56,7 +58,19 @@ public class AlertDispatchService {
 
       // 전송 시도(성공/실패)
       try {
-        AlertType alertType = event.getProductAlertSetting().getAlertType();
+        // 이벤트 매칭 이후 알림 OFF 시, FAILED 처리 + SendNotBefore를 아주 먼 시간으로
+        ProductAlertSetting setting = event.getProductAlertSetting();
+        UserEntity user = setting.getUserEntity();
+        if (user == null || !Boolean.TRUE.equals(user.getAlarm())) {
+          event.setStatus(EventStatus.FAILED);
+          event.setAttempts(event.getAttempts() + 1);
+          event.setSendNotBefore(now.plusYears(100));
+          event.setLastError("User alerts off");
+          failed++;
+          continue;
+        }
+
+        AlertType alertType = setting.getAlertType();
 
         AlertMessage message =
             alertMessageComposer.compose(alertType, event);
