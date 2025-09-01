@@ -156,16 +156,34 @@ public class UserProductService {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
         
-        // 업데이트
-        userProduct.setBankName(request.getBankName());
-        userProduct.setProductName(request.getProductName());
-        userProduct.setProductType(request.getProductType());
-        userProduct.setInterestRate(request.getInterestRate());
-        userProduct.setDepositAmount(request.getDepositAmount());
-        userProduct.setTermMonths(request.getTermMonths());
-        userProduct.setJoinDate(request.getJoinDate());
-        userProduct.setMaturityDate(request.getMaturityDate());
-        userProduct.setSpecialConditions(request.getSpecialConditions());
+        // 업데이트 - null이 아닌 값만 업데이트 (부분 업데이트 지원)
+        if (request.getBankName() != null) {
+            userProduct.setBankName(request.getBankName());
+        }
+        if (request.getProductName() != null) {
+            userProduct.setProductName(request.getProductName());
+        }
+        if (request.getProductType() != null) {
+            userProduct.setProductType(request.getProductType());
+        }
+        if (request.getInterestRate() != null) {
+            userProduct.setInterestRate(request.getInterestRate());
+        }
+        if (request.getDepositAmount() != null) {
+            userProduct.setDepositAmount(request.getDepositAmount());
+        }
+        if (request.getTermMonths() != null) {
+            userProduct.setTermMonths(request.getTermMonths());
+        }
+        if (request.getJoinDate() != null) {
+            userProduct.setJoinDate(request.getJoinDate());
+        }
+        if (request.getMaturityDate() != null) {
+            userProduct.setMaturityDate(request.getMaturityDate());
+        }
+        if (request.getSpecialConditions() != null) {
+            userProduct.setSpecialConditions(request.getSpecialConditions());
+        }
         
         userProductRepository.save(userProduct);
         log.info("사용자 보유 상품 수정: userId={}, userProductId={}", userId, userProductId);
@@ -183,16 +201,34 @@ public class UserProductService {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
         
-        // 업데이트
-        userProduct.setBankName(request.getBankName());
-        userProduct.setProductName(request.getProductName());
-        userProduct.setProductType(request.getProductType());
-        userProduct.setInterestRate(request.getInterestRate());
-        userProduct.setDepositAmount(request.getDepositAmount());
-        userProduct.setTermMonths(request.getTermMonths());
-        userProduct.setJoinDate(request.getJoinDate());
-        userProduct.setMaturityDate(request.getMaturityDate());
-        userProduct.setSpecialConditions(request.getSpecialConditions());
+        // 업데이트 - null이 아닌 값만 업데이트 (부분 업데이트 지원)
+        if (request.getBankName() != null) {
+            userProduct.setBankName(request.getBankName());
+        }
+        if (request.getProductName() != null) {
+            userProduct.setProductName(request.getProductName());
+        }
+        if (request.getProductType() != null) {
+            userProduct.setProductType(request.getProductType());
+        }
+        if (request.getInterestRate() != null) {
+            userProduct.setInterestRate(request.getInterestRate());
+        }
+        if (request.getDepositAmount() != null) {
+            userProduct.setDepositAmount(request.getDepositAmount());
+        }
+        if (request.getTermMonths() != null) {
+            userProduct.setTermMonths(request.getTermMonths());
+        }
+        if (request.getJoinDate() != null) {
+            userProduct.setJoinDate(request.getJoinDate());
+        }
+        if (request.getMaturityDate() != null) {
+            userProduct.setMaturityDate(request.getMaturityDate());
+        }
+        if (request.getSpecialConditions() != null) {
+            userProduct.setSpecialConditions(request.getSpecialConditions());
+        }
         
         UserProduct updatedProduct = userProductRepository.save(userProduct);
         log.info("사용자 보유 상품 수정: userId={}, userProductId={}", userId, userProductId);
