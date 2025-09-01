@@ -44,10 +44,6 @@ public class ProductAlertSetting {
 
   private BigInteger maxLimit; // 최대 한도
 
-  private Boolean rsrvTypeFlexible; // 자유적립
-
-  private Boolean rsrvTypeFixed; // 정액적립
-
   @Enumerated(EnumType.STRING)
   private AlertType alertType; // 알림 유형
 
