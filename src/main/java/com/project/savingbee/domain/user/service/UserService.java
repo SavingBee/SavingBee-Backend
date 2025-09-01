@@ -675,4 +675,11 @@ public class UserService extends DefaultOAuth2UserService implements UserDetails
         }
         return false;
     }
+
+    // username으로 userId 찾기
+    public Long findIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .map(UserEntity::getUserId)
+            .orElseThrow(() -> new UsernameNotFoundException("user not found: " + username));
+    }
 }
