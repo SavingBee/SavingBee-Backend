@@ -24,7 +24,7 @@ public class ProductAlertSetting {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id; // Key
 
-  @Column(name = "user_id", insertable = false, updatable = false)
+  @Column(name = "user_id", updatable = false)
   private Long userId; // 사용자 ID
 
   private Boolean productTypeDeposit; // 예금
