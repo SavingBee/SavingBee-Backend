@@ -38,8 +38,17 @@ public class CartController {
     @GetMapping
     public ResponseEntity<CartPageResponseDTO> getCartItems(
             @ModelAttribute CartRequestDTO request) {
+        log.info("=== Cart GET Request Debug ===");
+        log.info("Request parameters: bankName={}, page={}, size={}", 
+                request.getBankName(), request.getPage(), request.getSize());
+        
         Long userId = getCurrentUserId();
+        log.info("Retrieved userId: {}", userId);
+        
         CartPageResponseDTO response = cartService.getCartItems(userId, request);
+        log.info("Response: totalElements={}, contentSize={}", 
+                response.getTotalElements(), response.getContent().size());
+        
         return ResponseEntity.ok(response);
     }
     
@@ -112,13 +121,20 @@ public class CartController {
     
     // 현재 사용자 ID 조회 헬퍼 메서드
     private Long getCurrentUserId() {
+        log.info("=== getCurrentUserId Debug ===");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("Authentication object: {}", authentication);
+        log.info("Is authenticated: {}", authentication != null ? authentication.isAuthenticated() : "null");
+        
         if (authentication == null || !authentication.isAuthenticated()) {
+            log.error("Authentication failed - authentication is null or not authenticated");
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
         
         String username = authentication.getName();
-        log.debug("Current username from JWT: {}", username);
+        log.info("Current username from JWT: {}", username);
+        log.info("Authentication principal: {}", authentication.getPrincipal());
+        log.info("Authentication authorities: {}", authentication.getAuthorities());
         
         // username으로 데이터베이스에서 사용자 조회
         UserEntity user = userRepository.findByUsername(username)
@@ -127,7 +143,7 @@ public class CartController {
                     return new IllegalStateException("사용자를 찾을 수 없습니다. Username: " + username);
                 });
         
-        log.debug("Found user with ID: {}", user.getUserId());
+        log.info("Found user with ID: {}, username: {}", user.getUserId(), user.getUsername());
         return user.getUserId();
     }
 }
