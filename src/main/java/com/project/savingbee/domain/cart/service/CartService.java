@@ -37,21 +37,39 @@ public class CartService {
      * - 페이징 처리
      */
     public CartPageResponseDTO getCartItems(Long userId, CartRequestDTO request) {
+        log.info("=== CartService.getCartItems Debug ===");
+        log.info("Input parameters: userId={}, bankName={}, page={}, size={}", 
+                userId, request.getBankName(), request.getPage(), request.getSize());
+        
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<Cart> cartPage;
         
         String bankName = request.getBankName();
         boolean hasBankFilter = bankName != null && !bankName.trim().isEmpty();
+        log.info("Bank filter active: {}, bankName: '{}'", hasBankFilter, bankName);
         
         // 은행명 필터링 여부에 따른 쿼리 선택
         if (hasBankFilter) {
+            log.info("Executing filtered query with bankName: {}", bankName);
             // 은행명 필터링
             cartPage = cartRepository.findByUserIdAndBankNameContainingIgnoreCaseOrderByCreatedAtDesc(
                 userId, bankName, pageable);
         } else {
+            log.info("Executing unfiltered query for userId: {}", userId);
             // 필터링 없음 - 기본 정렬(최근 담은 순)
             cartPage = cartRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         }
+        
+        log.info("Query result: totalElements={}, totalPages={}, currentPage={}", 
+                cartPage.getTotalElements(), cartPage.getTotalPages(), cartPage.getNumber());
+        log.info("Cart items found: {}", cartPage.getContent().size());
+        
+        // 각 Cart 항목의 상세 정보 로깅
+        cartPage.getContent().forEach(cart -> {
+            log.info("Cart item: id={}, userId={}, productCode={}, bankName={}, productName={}", 
+                    cart.getCartId(), cart.getUserId(), cart.getProductCode(), 
+                    cart.getBankName(), cart.getProductName());
+        });
         
         List<CartResponseDTO> content = cartPage.getContent().stream()
                 .map(CartResponseDTO::from)

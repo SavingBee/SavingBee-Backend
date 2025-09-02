@@ -28,7 +28,7 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long cartId;
 
-    @Column(name = "user_id", insertable = false, updatable = false)
+    @Column(name = "user_id")
     private Long userId; // 사용자 ID
     
     private String productCode; // 상품코드 (finPrdtCd)

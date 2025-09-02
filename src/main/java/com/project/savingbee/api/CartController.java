@@ -4,6 +4,8 @@ import com.project.savingbee.domain.cart.dto.CartPageResponseDTO;
 import com.project.savingbee.domain.cart.dto.CartRequestDTO;
 import com.project.savingbee.domain.cart.dto.CartResponseDTO;
 import com.project.savingbee.domain.cart.service.CartService;
+import com.project.savingbee.domain.user.entity.UserEntity;
+import com.project.savingbee.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ import java.util.Map;
 public class CartController {
     
     private final CartService cartService;
+    private final UserRepository userRepository;
     
     /**
      * 1. 목록조회(필터/페이징): 사용자의 장바구니 상품 목록 조회
@@ -35,8 +38,17 @@ public class CartController {
     @GetMapping
     public ResponseEntity<CartPageResponseDTO> getCartItems(
             @ModelAttribute CartRequestDTO request) {
+        log.info("=== Cart GET Request Debug ===");
+        log.info("Request parameters: bankName={}, page={}, size={}", 
+                request.getBankName(), request.getPage(), request.getSize());
+        
         Long userId = getCurrentUserId();
+        log.info("Retrieved userId: {}", userId);
+        
         CartPageResponseDTO response = cartService.getCartItems(userId, request);
+        log.info("Response: totalElements={}, contentSize={}", 
+                response.getTotalElements(), response.getContent().size());
+        
         return ResponseEntity.ok(response);
     }
     
@@ -109,24 +121,29 @@ public class CartController {
     
     // 현재 사용자 ID 조회 헬퍼 메서드
     private Long getCurrentUserId() {
+        log.info("=== getCurrentUserId Debug ===");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("Authentication object: {}", authentication);
+        log.info("Is authenticated: {}", authentication != null ? authentication.isAuthenticated() : "null");
+        
         if (authentication == null || !authentication.isAuthenticated()) {
+            log.error("Authentication failed - authentication is null or not authenticated");
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
         
         String username = authentication.getName();
-        log.debug("Current username from JWT: {}", username);
+        log.info("Current username from JWT: {}", username);
+        log.info("Authentication principal: {}", authentication.getPrincipal());
+        log.info("Authentication authorities: {}", authentication.getAuthorities());
         
-        // username이 "user1004" 형태라면 숫자 부분만 추출
-        try {
-            if (username.startsWith("user")) {
-                return Long.parseLong(username.substring(4)); // "user" 제거 후 숫자 부분만
-            } else {
-                return Long.parseLong(username); // 숫자 형태라면 그대로 변환
-            }
-        } catch (NumberFormatException e) {
-            log.error("Failed to parse user ID from username: {}", username, e);
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다. Username: " + username);
-        }
+        // username으로 데이터베이스에서 사용자 조회
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    log.error("User not found with username: {}", username);
+                    return new IllegalStateException("사용자를 찾을 수 없습니다. Username: " + username);
+                });
+        
+        log.info("Found user with ID: {}, username: {}", user.getUserId(), user.getUsername());
+        return user.getUserId();
     }
 }
