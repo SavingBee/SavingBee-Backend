@@ -24,9 +24,9 @@ public class ChannelRouter {
 
   public void send(AlertType alertType, AlertMessage message) {
     switch (alertType) {
-      case EMAIL: emailSender.send(message);
-      case SMS: smsSender.send(message);
-      case PUSH: pushSender.send(message);
+      case EMAIL -> emailSender.send(message);
+      case SMS -> smsSender.send(message);
+      case PUSH -> pushSender.send(message);
     }
   }
 }

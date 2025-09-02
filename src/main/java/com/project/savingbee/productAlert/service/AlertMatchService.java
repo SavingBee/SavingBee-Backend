@@ -2,6 +2,7 @@ package com.project.savingbee.productAlert.service;
 
 import com.project.savingbee.common.entity.DepositInterestRates;
 import com.project.savingbee.common.entity.DepositProducts;
+import com.project.savingbee.common.entity.FinancialCompanies;
 import com.project.savingbee.common.entity.ProductAlertEvent;
 import com.project.savingbee.common.entity.ProductAlertEvent.EventStatus;
 import com.project.savingbee.common.entity.ProductAlertEvent.ProductKind;
@@ -12,11 +13,13 @@ import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.DepositInterestRatesRepository;
 import com.project.savingbee.common.repository.DepositProductsRepository;
+import com.project.savingbee.common.repository.FinancialCompaniesRepository;
 import com.project.savingbee.common.repository.ProductAlertEventRepository;
 import com.project.savingbee.common.repository.ProductAlertSettingRepository;
 import com.project.savingbee.common.repository.SavingsInterestRatesRepository;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
 import com.project.savingbee.domain.user.entity.UserEntity;
+import com.project.savingbee.productAlert.payload.AlertPayloadBuilder;
 import com.project.savingbee.productAlert.util.DedupeKey;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -28,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -42,6 +46,8 @@ public class AlertMatchService {
   private final DepositInterestRatesRepository depositInterestRatesRepository;
   private final SavingsProductsRepository savingsProductsRepository;
   private final SavingsInterestRatesRepository savingsInterestRatesRepository;
+  private final FinancialCompaniesRepository financialCompaniesRepository;
+  private final AlertPayloadBuilder alertPayloadBuilder;
 
   /*
     알림 설정을 가져와 마지막 비교 시각 이후 변경된 상품만 스캔(상품 정보, 금리 옵션 정보 둘 다)
@@ -74,48 +80,16 @@ public class AlertMatchService {
         since = now.minusSeconds(1);
       }
 
-      // 후보 선정(예금)
-      List<DepositProducts> deposits = new ArrayList<>(depositProductsRepository.findByUpdatedAtAfter(since));
-      List<String> depCodesByRate = depositInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(since);
-      if (!depCodesByRate.isEmpty()) {
-        deposits.addAll(depositProductsRepository.findByFinPrdtCdIn(depCodesByRate));
-      }
-      Set<String> seenDeposit = new HashSet<>();  // 중복 제거
+      // 예금/적금 설정 여부
+      boolean checkDeposit = setting.getProductTypeDeposit();
+      boolean checkSavings = setting.getProductTypeSaving();
 
-      // 예금
-      for (DepositProducts products : deposits) {
-        if (!seenDeposit.add(products.getFinPrdtCd())) continue;
-        if (!matchesDeposit(setting, products)) continue;
-
-        LocalDateTime version = versionForDeposit(products, setting);
-
-        String key = DedupeKey.of(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.DEPOSIT,
-            products.getFinPrdtCd(), version);
-
-        created += saveIfAbsent(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.DEPOSIT,
-            products.getFinPrdtCd(), key, dispatchAt, simplePayload(products.getFinPrdtNm(), products.getFinCoNo()));
+      if (checkDeposit || (!checkDeposit && !checkSavings)) {
+        created += scanDeposit(setting, since, dispatchAt);
       }
 
-      // 후보 선정(적금)
-      List<SavingsProducts> savings = new ArrayList<>(savingsProductsRepository.findByUpdatedAtAfter(since));
-      List<String> savCodesByRate = savingsInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(since);
-      if (!savCodesByRate.isEmpty()) {
-        savings.addAll(savingsProductsRepository.findByFinPrdtCdIn(savCodesByRate));
-      }
-      Set<String> seenSaving = new HashSet<>();  // 중복 제거
-
-      // 적금
-      for (SavingsProducts products : savings) {
-        if (!seenSaving.add(products.getFinPrdtCd())) continue;
-        if (!matchesSavings(setting, products)) continue;
-
-        LocalDateTime version = versionForSavings(products, setting);
-
-        String key = DedupeKey.of(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.SAVINGS,
-            products.getFinPrdtCd(), version);
-
-        created += saveIfAbsent(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.SAVINGS,
-            products.getFinPrdtCd(), key, dispatchAt, simplePayload(products.getFinPrdtNm(), products.getFinCoNo()));
+      if (checkSavings || (!checkDeposit && !checkSavings)) {
+        created += scanSavings(setting, since, dispatchAt);
       }
 
       // 비교 시간 갱신
@@ -125,17 +99,86 @@ public class AlertMatchService {
     return created;
   }
 
+  private int scanDeposit(ProductAlertSetting setting, LocalDateTime since, LocalDateTime dispatchAt) {
+    int created = 0;
+
+    // 후보 선정(예금)
+    List<DepositProducts> deposits = new ArrayList<>(depositProductsRepository.findByUpdatedAtAfter(since));
+    List<String> depCodesByRate = depositInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(since);
+    if (!depCodesByRate.isEmpty()) {
+      deposits.addAll(depositProductsRepository.findByFinPrdtCdIn(depCodesByRate));
+    }
+    Set<String> seenDeposit = new HashSet<>();  // 중복 제거
+
+    // 예금
+    for (DepositProducts products : deposits) {
+      if (!seenDeposit.add(products.getFinPrdtCd())) continue;
+
+      BigDecimal rate = matchesDeposit(setting, products);
+      if (rate == null) continue;
+
+      FinancialCompanies company = financialCompaniesRepository.findByFinCoNo(products.getFinCoNo());
+
+      LocalDateTime version = versionForDeposit(products, setting);
+
+      String key = DedupeKey.of(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.DEPOSIT,
+          products.getFinPrdtCd(), version);
+
+      created += saveIfAbsent(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.DEPOSIT,
+          products.getFinPrdtCd(), key, dispatchAt,
+          () -> alertPayloadBuilder.forDeposit(products, rate, company, LocalDateTime.now()));
+    }
+
+    return created;
+  }
+
+  private int scanSavings(ProductAlertSetting setting, LocalDateTime since, LocalDateTime dispatchAt) {
+    int created = 0;
+
+    // 후보 선정(적금)
+    List<SavingsProducts> savings = new ArrayList<>(savingsProductsRepository.findByUpdatedAtAfter(since));
+    List<String> savCodesByRate = savingsInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(since);
+    if (!savCodesByRate.isEmpty()) {
+      savings.addAll(savingsProductsRepository.findByFinPrdtCdIn(savCodesByRate));
+    }
+    Set<String> seenSaving = new HashSet<>();  // 중복 제거
+
+    // 적금
+    for (SavingsProducts products : savings) {
+      if (!seenSaving.add(products.getFinPrdtCd()))
+        continue;
+
+      BigDecimal rate = matchesSavings(setting, products);
+      if (rate == null)
+        continue;
+
+      FinancialCompanies company = financialCompaniesRepository.findByFinCoNo(
+          products.getFinCoNo());
+
+      LocalDateTime version = versionForSavings(products, setting);
+
+      String key = DedupeKey.of(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.SAVINGS,
+          products.getFinPrdtCd(), version);
+
+      created += saveIfAbsent(setting.getId(), TriggerType.PRODUCT_CHANGE, ProductKind.SAVINGS,
+          products.getFinPrdtCd(), key, dispatchAt,
+          () -> alertPayloadBuilder.forSavings(products, rate, company, LocalDateTime.now()));
+    }
+
+    return created;
+  }
+
   // 예금
-  private boolean matchesDeposit(ProductAlertSetting setting, DepositProducts product) {
+  private BigDecimal matchesDeposit(ProductAlertSetting setting, DepositProducts product) {
     // 활성 상태 확인
-    if (!Boolean.TRUE.equals(product.getIsActive())) return false;
+    if (!Boolean.TRUE.equals(product.getIsActive())) return null;
 
     String prdCode = product.getFinPrdtCd();
     Integer maxSaveTerm = setting.getMaxSaveTerm();
     List<String> intRate = settingTypes(setting);
     Optional<DepositInterestRates> o;
 
-    if (maxSaveTerm == null) return false;  // 기간은 필수 설정 값
+    if (maxSaveTerm == null) return null;  // 기간은 필수 설정 값
 
     // 이자계산방식 설정 시
     if (intRate.size() == 1) {
@@ -155,36 +198,36 @@ public class AlertMatchService {
     // 금리 조건 비교
     if (setting.getMinInterestRate() != null) {
       if (bestRate == null || bestRate.compareTo(setting.getMinInterestRate()) < 0) {
-        return false;
+        return null;
       }
     }
 
     // 예치 금액 설정값이 상품 값 범위에 포함 되는 지 확인
     if (setting.getMinAmount() != null || setting.getMaxLimit() != null) {
-      Long prodMin = toLongExact(product.getMinAmount());
-      Long prodMax = toLongExact(product.getMaxLimit());
+      Long prodMin = product.getMinAmount() != null ? product.getMinAmount().longValue() : 0;
+      Long prodMax = product.getMaxLimit() != null ? product.getMaxLimit().longValue() : Long.MAX_VALUE;
       Long settingMin = toLongExact(setting.getMinAmount());
       Long settingMax = toLongExact(setting.getMaxLimit());
 
       if (!contains(settingMin, settingMax, prodMin, prodMax)) {
-        return false;
+        return null;
       }
     }
 
-    return true;
+    return bestRate;
   }
 
   // 적금
-  private boolean matchesSavings(ProductAlertSetting setting, SavingsProducts product) {
+  private BigDecimal matchesSavings(ProductAlertSetting setting, SavingsProducts product) {
     // 활성 상태 확인
-    if (!Boolean.TRUE.equals(product.getIsActive())) return false;
+    if (!Boolean.TRUE.equals(product.getIsActive())) return null;
 
     String prdCode = product.getFinPrdtCd();
     Integer maxSaveTerm = setting.getMaxSaveTerm();
     List<String> intRate = settingTypes(setting);
     Optional<SavingsInterestRates> o;
 
-    if (maxSaveTerm == null) return false;  // 기간은 필수 설정 값
+    if (maxSaveTerm == null) return null;  // 기간은 필수 설정 값
 
     // 이자계산방식 설정 시
     if (intRate.size() == 1) {
@@ -203,18 +246,18 @@ public class AlertMatchService {
     // 금리 조건 비교
     if (setting.getMinInterestRate() != null) {
       if (bestRate == null || bestRate.compareTo(setting.getMinInterestRate()) < 0) {
-        return false;
+        return null;
       }
     }
 
     // 최소 가입 금액, 최대 한도는 적금 상품은 해당 없음
 
-    return true;
+    return bestRate;
   }
 
   // 알림 이벤트를 중복 없이 한 건만 큐에 적재
   private int saveIfAbsent(Long settingId, TriggerType trigger, ProductKind kind,
-      String productCode, String dedupeKey, LocalDateTime sendNotBefore, String payload) {
+      String productCode, String dedupeKey, LocalDateTime sendNotBefore, Supplier<String> payloadBuilder) {
 
     if (productAlertEventRepository.existsByDedupeKey(dedupeKey)) return 0; // dedupeKey 중복으로 적재X
 
@@ -227,7 +270,7 @@ public class AlertMatchService {
                                             .status(EventStatus.READY)
                                             .attempts(0)
                                             .sendNotBefore(sendNotBefore)
-                                            .payloadJson(payload)
+                                            .payloadJson(payloadBuilder.get())
                                             .build();
     try {
       productAlertEventRepository.save(productAlertEvent);
@@ -243,16 +286,6 @@ public class AlertMatchService {
     ZonedDateTime nine = zNow.toLocalDate().atTime(9, 0).atZone(zone);
     if (!zNow.isBefore(nine)) nine = nine.plusDays(1);
     return nine.toLocalDateTime();
-  }
-
-  /*
-    템플릿/발송에 필요한 최소 정보만 담음 JSON 문자열 (임시)
-    필드 : name(상품명), finCoNo(금융회사코드)
-  */
-  private String simplePayload(String productName, String finCoNo) {
-    String n = productName == null ? "" : productName.replace("\"","\\\"");
-    String c = finCoNo == null ? "" : finCoNo.replace("\"","\\\"");
-    return "{\"name\":\"" + n + "\",\"finCoNo\":\"" + c + "\"}";
   }
 
   // 이자계산방식(단리/복리) 설정 조건 확인
@@ -331,5 +364,11 @@ public class AlertMatchService {
     if (a == null) return b;
     if (b == null) return a;
     return a.isAfter(b) ? a : b;
+  }
+
+  // 개발/테스트용
+  @Transactional
+  public void deleteAllAlertEvents() {
+    productAlertEventRepository.deleteAll();
   }
 }

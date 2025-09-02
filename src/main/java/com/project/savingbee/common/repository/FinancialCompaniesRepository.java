@@ -11,4 +11,6 @@ public interface FinancialCompaniesRepository extends JpaRepository<FinancialCom
 
   // 키워드가 포함되는 금융회사명 찾기
   List<MatchedBank> findByKorCoNmContainingOrderByFinCoNo(String keyword);
+
+  FinancialCompanies findByFinCoNo(String finCoNo);
 }
