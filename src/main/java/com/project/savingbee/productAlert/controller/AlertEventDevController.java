@@ -7,6 +7,7 @@ import com.project.savingbee.productAlert.service.AlertMatchService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,6 +26,13 @@ public class AlertEventDevController {
     int created = alertMatchService.scanAndEnqueue();
 
     return ResponseEntity.ok(new AlertEventScanResponseDto(created, LocalDateTime.now()));
+  }
+
+  // 모든 매칭된 알림 이벤트 삭제
+  @DeleteMapping("/all")
+  public ResponseEntity<Void> deleteAllAlertEvents() {
+    alertMatchService.deleteAllAlertEvents();
+    return ResponseEntity.noContent().build();
   }
 
   // 알림 발송
