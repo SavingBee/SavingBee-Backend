@@ -4,6 +4,8 @@ import com.project.savingbee.domain.cart.dto.CartPageResponseDTO;
 import com.project.savingbee.domain.cart.dto.CartRequestDTO;
 import com.project.savingbee.domain.cart.dto.CartResponseDTO;
 import com.project.savingbee.domain.cart.service.CartService;
+import com.project.savingbee.domain.user.entity.UserEntity;
+import com.project.savingbee.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ import java.util.Map;
 public class CartController {
     
     private final CartService cartService;
+    private final UserRepository userRepository;
     
     /**
      * 1. 목록조회(필터/페이징): 사용자의 장바구니 상품 목록 조회
@@ -117,16 +120,14 @@ public class CartController {
         String username = authentication.getName();
         log.debug("Current username from JWT: {}", username);
         
-        // username이 "user1004" 형태라면 숫자 부분만 추출
-        try {
-            if (username.startsWith("user")) {
-                return Long.parseLong(username.substring(4)); // "user" 제거 후 숫자 부분만
-            } else {
-                return Long.parseLong(username); // 숫자 형태라면 그대로 변환
-            }
-        } catch (NumberFormatException e) {
-            log.error("Failed to parse user ID from username: {}", username, e);
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다. Username: " + username);
-        }
+        // username으로 데이터베이스에서 사용자 조회
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    log.error("User not found with username: {}", username);
+                    return new IllegalStateException("사용자를 찾을 수 없습니다. Username: " + username);
+                });
+        
+        log.debug("Found user with ID: {}", user.getUserId());
+        return user.getUserId();
     }
 }

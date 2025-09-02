@@ -5,6 +5,8 @@ import com.project.savingbee.domain.notification.dto.MaturityNotificationDTO;
 import com.project.savingbee.domain.recommendation.dto.*;
 import com.project.savingbee.domain.recommendation.service.RecommendationService;
 import com.project.savingbee.domain.notification.service.MaturityNotificationService;
+import com.project.savingbee.domain.user.entity.UserEntity;
+import com.project.savingbee.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,7 @@ public class RecommendationController {
     
     private final RecommendationService recommendationService;
     private final MaturityNotificationService maturityNotificationService;
+    private final UserRepository userRepository;
     
     /**
      * 2. 해당 정보 기반으로 비슷한 상품/더 금리가 높은 상품 파악하여 사용자에게 알려줌
@@ -100,12 +103,17 @@ public class RecommendationController {
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
         
-        // 실제 프로젝트에서는 JWT 토큰에서 사용자 ID를 추출하는 로직 필요
-        // 현재는 임시로 username을 Long으로 변환 (실제 구현 시 수정 필요)
-        try {
-            return Long.parseLong(authentication.getName());
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다.");
-        }
+        String username = authentication.getName();
+        log.debug("Current username from JWT: {}", username);
+        
+        // username으로 데이터베이스에서 사용자 조회
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    log.error("User not found with username: {}", username);
+                    return new IllegalStateException("사용자를 찾을 수 없습니다. Username: " + username);
+                });
+        
+        log.debug("Found user with ID: {}", user.getUserId());
+        return user.getUserId();
     }
 }
