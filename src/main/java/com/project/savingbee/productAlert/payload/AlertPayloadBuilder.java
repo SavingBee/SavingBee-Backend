@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class AlertPayloadBuilder {
+
   private final ObjectMapper objectMapper;
 
   public String forDeposit(DepositProducts product, BigDecimal rate, FinancialCompanies company,

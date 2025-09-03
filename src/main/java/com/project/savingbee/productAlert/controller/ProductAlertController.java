@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/alerts/settings")
 public class ProductAlertController {
+
   private final ProductAlertService productAlertService;
   private final UserService userService;
 
@@ -31,7 +32,8 @@ public class ProductAlertController {
 
     Long userId = userService.findIdByUsername(userDetails.getUsername());
 
-    AlertSettingsResponseDto alertSettingsResponseDto = productAlertService.getAlertSettings(userId);
+    AlertSettingsResponseDto alertSettingsResponseDto = productAlertService.getAlertSettings(
+        userId);
     return ResponseEntity.ok(alertSettingsResponseDto);
   }
 

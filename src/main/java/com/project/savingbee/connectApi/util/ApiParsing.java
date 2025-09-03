@@ -9,8 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * API 데이터 파싱 유틸리티 클래스
- * 예금, 적금 API 데이터 파싱 시 공통으로 사용
+ * API 데이터 파싱 - 예금, 적금 API 데이터 파싱 시 공통으로 사용
  */
 @Slf4j
 public class ApiParsing {
@@ -29,6 +28,7 @@ public class ApiParsing {
 
   /**
    * 날짜 문자열을 LocalDate로 파싱
+   *
    * @param dateStr 날짜 문자열 (yyyyMMdd 형식)
    * @return LocalDate 객체 또는 null
    */
@@ -46,6 +46,7 @@ public class ApiParsing {
 
   /**
    * 문자열을 Integer로 파싱
+   *
    * @param value 파싱할 값 (String 또는 Number)
    * @return Integer 객체 또는 null
    */
@@ -70,6 +71,7 @@ public class ApiParsing {
 
   /**
    * 값을 BigDecimal로 파싱
+   *
    * @param value 파싱할 값 (String, Number, Long 등)
    * @return BigDecimal 객체 또는 null
    */
@@ -94,6 +96,7 @@ public class ApiParsing {
 
   /**
    * Long 값을 BigDecimal로 파싱 (maxLimit 등의 큰 숫자 처리용)
+   *
    * @param value Long 값
    * @return BigDecimal 객체 또는 null
    */
@@ -111,6 +114,7 @@ public class ApiParsing {
 
   /**
    * 기타유의사항 텍스트에서 월 최소 적립금액 파싱
+   *
    * @param etcNote 기타유의사항 텍스트
    * @return 월 최소 적립금액 (원 단위)
    */
@@ -147,6 +151,7 @@ public class ApiParsing {
 
   /**
    * 기타유의사항 텍스트에서 월 최대 적립금액 파싱
+   *
    * @param etcNote 기타유의사항 텍스트
    * @return 월 최대 적립금액 (원 단위)
    */
@@ -183,6 +188,7 @@ public class ApiParsing {
 
   /**
    * 금액 문자열을 BigDecimal로 변환 ("100만원" -> 1000000)
+   *
    * @param amountStr 금액 문자열
    * @return BigDecimal 금액 (원 단위)
    */

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/compare")
 public class ProductCompareController {
+
   private final ProductCompareService productCompareService;
 
   // 원하는 조건의 상품 목록 가져오기(필터링)

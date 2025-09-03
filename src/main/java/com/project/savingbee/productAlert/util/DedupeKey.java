@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 public final class DedupeKey {
-  private DedupeKey() {}
+
+  private DedupeKey() {
+  }
 
   // 중복 방지용 해시 키 생성
   public static String of(Long alertSettingId, TriggerType triggerType,

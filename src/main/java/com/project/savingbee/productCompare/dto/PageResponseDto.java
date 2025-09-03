@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 @AllArgsConstructor
 @JsonInclude(Include.NON_NULL)  // null 필드는 응답에서 생략
 public class PageResponseDto<T> {
+
   private final List<T> content;
   private final int page;
   private final int size; // page size
@@ -23,7 +24,7 @@ public class PageResponseDto<T> {
     int page = Math.max(0, pageable.getPageNumber());
     int size = pageable.getPageSize();              // @PageableDefault로 기본값 20
     int from = Math.min(page * size, all.size());
-    int to   = Math.min(from + size, all.size());
+    int to = Math.min(from + size, all.size());
     List<T> slice = all.subList(from, to);
 
     return new PageResponseDto<>(slice, page, size, all.size(), matchedBankInfo);
@@ -32,6 +33,7 @@ public class PageResponseDto<T> {
   @Getter
   @AllArgsConstructor
   public static class MatchedBankInfo {
+
     private String bankKeyword;
     private List<MatchedBank> matchedBanks;
   }
@@ -39,6 +41,7 @@ public class PageResponseDto<T> {
   @Getter
   @AllArgsConstructor
   public static class MatchedBank {
+
     String finCoNo; // 금융회사 고유번호
     String korCoNm; // 금융회사 명
   }

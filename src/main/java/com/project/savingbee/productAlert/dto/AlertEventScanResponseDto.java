@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class AlertEventScanResponseDto {
+
   private int created;
   private LocalDateTime executedAt;
 }

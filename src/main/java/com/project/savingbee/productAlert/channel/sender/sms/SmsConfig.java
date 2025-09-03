@@ -16,6 +16,7 @@ import reactor.netty.http.client.HttpClient;
 @EnableConfigurationProperties(SmsProperties.class)
 @ConditionalOnProperty(prefix = "sms", name = "enabled", havingValue = "true")
 public class SmsConfig {
+
   @Bean
   WebClient sensWebClient(SmsProperties smsProperties) {
     HttpClient httpClient = HttpClient.create()

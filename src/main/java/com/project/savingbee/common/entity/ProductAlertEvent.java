@@ -27,6 +27,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @Builder
 public class ProductAlertEvent {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;                        // key

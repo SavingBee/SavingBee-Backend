@@ -7,11 +7,13 @@ import lombok.Getter;
 
 // 세후 이자, 실수령액 계산
 public final class CalcEngine {
+
   /**
    * 예금 만기시 실수령액 계산
-   * @param amount 예치금액
-   * @param rate 세후 이자율
-   * @param termMonth 예치기간
+   *
+   * @param amount       예치금액
+   * @param rate         세후 이자율
+   * @param termMonth    예치기간
    * @param intrRateType 이자계산방식(단리/복리)
    */
   public static CalcResult deposit(
@@ -23,7 +25,7 @@ public final class CalcEngine {
 
     BigDecimal interest = intrRateType.equals("S")
         ? A.multiply(R).multiply(BigDecimal.valueOf(termMonth)
-            .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP))
+        .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP))
         : A.multiply(BigDecimal.ONE.add(I).pow(termMonth).subtract(BigDecimal.ONE));
 
     long afterTaxInterest = interest.setScale(0, RoundingMode.DOWN).longValue();
@@ -34,9 +36,10 @@ public final class CalcEngine {
 
   /**
    * 적금 만기시 실수령액 계산
-   * @param amount 월 납입금액
-   * @param rate 세후 이자율
-   * @param termMonth 예치기간
+   *
+   * @param amount       월 납입금액
+   * @param rate         세후 이자율
+   * @param termMonth    예치기간
    * @param intrRateType 이자계산방식(단리/복리)
    */
   public static CalcResult savings(
@@ -75,6 +78,7 @@ public final class CalcEngine {
   @Getter
   @AllArgsConstructor
   public static class CalcResult {
+
     private final long afterTaxInterest;  // 세후 이자
     private final long amountReceived;  // 실수령액
   }

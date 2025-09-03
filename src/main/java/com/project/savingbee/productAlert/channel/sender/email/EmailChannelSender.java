@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 @Component("emailSender")
 @RequiredArgsConstructor
 public class EmailChannelSender implements ChannelSender {
+
   private final JavaMailSender mailSender;
 
   @Value("${alert.mail.from:no-reply@savingbee.dev}")

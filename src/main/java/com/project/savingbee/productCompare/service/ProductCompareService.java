@@ -33,12 +33,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true) // 읽기 전용
 public class ProductCompareService {
+
   private final DepositInterestRatesRepository depositInterestRatesRepository;
   private final SavingsInterestRatesRepository savingsInterestRatesRepository;
   private final FinancialCompaniesRepository financialCompaniesRepository;
 
   // 상품 필터링
-  public PageResponseDto<ProductInfoDto> findFilteredProducts(CompareRequestDto requestDto, Pageable pageable) {
+  public PageResponseDto<ProductInfoDto> findFilteredProducts(CompareRequestDto requestDto,
+      Pageable pageable) {
     List<ProductInfoDto> productInfoDtos = requestDto.getType().equals("D")
         ? findDepositProducts(requestDto)
         : findSavingsProducts(requestDto);
@@ -155,17 +157,18 @@ public class ProductCompareService {
     List<String> ids = requestDto.getProductIds();
     products.sort(Comparator.comparingInt(p -> ids.indexOf(p.getProductId())));
 
-    long maxAmount = products.stream().mapToLong(ProductCompareInfosDto::getAmountReceived).max().orElse(0);
+    long maxAmount = products.stream().mapToLong(ProductCompareInfosDto::getAmountReceived).max()
+        .orElse(0);
     long winners = products.stream().filter(p -> p.getAmountReceived() == maxAmount).count();
 
     // 실수령액이 같은 경우 winner -> 둘 다 false
     products = products.stream().map(p ->
-        p.toBuilder().winner(winners == 1 && p.getAmountReceived() == maxAmount).build())
+            p.toBuilder().winner(winners == 1 && p.getAmountReceived() == maxAmount).build())
         .toList();
 
     String winnerId = (winners == 1)
         ? products.stream().filter(ProductCompareInfosDto::isWinner)
-            .findFirst().map(ProductCompareInfosDto::getProductId).orElse(null)
+        .findFirst().map(ProductCompareInfosDto::getProductId).orElse(null)
         : null;
 
     return new CompareResponseDto(products, winnerId);

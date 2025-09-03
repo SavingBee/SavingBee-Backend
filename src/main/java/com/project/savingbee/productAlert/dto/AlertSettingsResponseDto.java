@@ -13,6 +13,7 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 public class AlertSettingsResponseDto {
+
   private Long userId;
   private AlertType alertType;
 

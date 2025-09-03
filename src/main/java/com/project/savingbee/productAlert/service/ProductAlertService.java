@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class ProductAlertService {
+
   private final ProductAlertSettingRepository productAlertSettingRepository;
 
   // 기존에 알림 설정된 조건 가져오기
@@ -47,7 +48,8 @@ public class ProductAlertService {
         .productTypeSaving(Boolean.TRUE.equals(alertSettingsRequestDto.getProductTypeSaving()))
         .minInterestRate(alertSettingsRequestDto.getMinInterestRate())
         .interestCalcSimple(Boolean.TRUE.equals(alertSettingsRequestDto.getInterestCalcSimple()))
-        .interestCalcCompound(Boolean.TRUE.equals(alertSettingsRequestDto.getInterestCalcCompound()))
+        .interestCalcCompound(
+            Boolean.TRUE.equals(alertSettingsRequestDto.getInterestCalcCompound()))
         .maxSaveTerm(alertSettingsRequestDto.getMaxSaveTerm())
         .minAmount(alertSettingsRequestDto.getMinAmount())
         .maxLimit(alertSettingsRequestDto.getMaxLimit())
@@ -73,19 +75,27 @@ public class ProductAlertService {
 
     // 변경 사항이 있을 경우에만 수정
     if (alertSettingsRequestDto.getProductTypeDeposit() != null) {
-      productAlertSetting.setProductTypeDeposit(alertSettingsRequestDto.getProductTypeDeposit()); }
+      productAlertSetting.setProductTypeDeposit(alertSettingsRequestDto.getProductTypeDeposit());
+    }
     if (alertSettingsRequestDto.getProductTypeSaving() != null) {
-      productAlertSetting.setProductTypeSaving(alertSettingsRequestDto.getProductTypeSaving()); }
+      productAlertSetting.setProductTypeSaving(alertSettingsRequestDto.getProductTypeSaving());
+    }
     if (alertSettingsRequestDto.getMinInterestRate() != null) {
-      productAlertSetting.setMinInterestRate(alertSettingsRequestDto.getMinInterestRate()); }
+      productAlertSetting.setMinInterestRate(alertSettingsRequestDto.getMinInterestRate());
+    }
     if (alertSettingsRequestDto.getInterestCalcSimple() != null) {
-      productAlertSetting.setInterestCalcSimple(alertSettingsRequestDto.getInterestCalcSimple()); }
+      productAlertSetting.setInterestCalcSimple(alertSettingsRequestDto.getInterestCalcSimple());
+    }
     if (alertSettingsRequestDto.getInterestCalcCompound() != null) {
-      productAlertSetting.setInterestCalcCompound(alertSettingsRequestDto.getInterestCalcCompound()); }
+      productAlertSetting.setInterestCalcCompound(
+          alertSettingsRequestDto.getInterestCalcCompound());
+    }
     if (alertSettingsRequestDto.getMinAmount() != null) {
-      productAlertSetting.setMinAmount(alertSettingsRequestDto.getMinAmount()); }
+      productAlertSetting.setMinAmount(alertSettingsRequestDto.getMinAmount());
+    }
     if (alertSettingsRequestDto.getMaxLimit() != null) {
-      productAlertSetting.setMaxLimit(alertSettingsRequestDto.getMaxLimit()); }
+      productAlertSetting.setMaxLimit(alertSettingsRequestDto.getMaxLimit());
+    }
 
     return new AlertSettingsResponseDto(productAlertSettingRepository.save(productAlertSetting));
   }
@@ -96,6 +106,7 @@ public class ProductAlertService {
     productAlertSettingRepository.deleteByUserId(userId);
 
   }
+
   @Transactional
   public void deleteAllAlertSettings() {
     productAlertSettingRepository.deleteAll();

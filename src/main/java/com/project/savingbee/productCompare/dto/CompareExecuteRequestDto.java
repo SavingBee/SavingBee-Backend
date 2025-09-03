@@ -11,6 +11,7 @@ import org.hibernate.validator.constraints.UniqueElements;
 @Getter
 @Setter
 public class CompareExecuteRequestDto {
+
   @NotNull
   @Size(min = 2, max = 2)
   @UniqueElements // 중복 방지

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ChannelRouter {
+
   private final EmailChannelSender emailSender;
   private final ChannelSender smsSender;
   private final PushChannelSender pushSender;
