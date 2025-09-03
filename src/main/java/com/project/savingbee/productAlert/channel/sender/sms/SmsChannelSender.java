@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "sms", name = "enabled", havingValue = "true")
 public class SmsChannelSender implements ChannelSender {
+
   private final SensSmsGateway sensSmsGateway;
 
   @Override

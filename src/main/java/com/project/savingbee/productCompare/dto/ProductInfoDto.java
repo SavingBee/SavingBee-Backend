@@ -13,6 +13,7 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 public class ProductInfoDto {
+
   private final String productId; // 상품코드
   private final String bankName;  // 금융회사명
   private final String productName; // 상품명

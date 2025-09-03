@@ -17,32 +17,32 @@ import java.time.LocalDateTime;
 @Builder
 public class FindUsernameVerificationToken {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "email", nullable = false)
-    private String email;
+  @Column(name = "email", nullable = false)
+  private String email;
 
-    @Column(name = "verification_code", nullable = false)
-    private String verificationCode; // 6자리 인증 코드
+  @Column(name = "verification_code", nullable = false)
+  private String verificationCode; // 6자리 인증 코드
 
-    @Column(name = "is_used", nullable = false)
-    @Builder.Default
-    private Boolean isUsed = false; // 사용 여부
+  @Column(name = "is_used", nullable = false)
+  @Builder.Default
+  private Boolean isUsed = false; // 사용 여부
 
-    @Column(name = "is_verified", nullable = false)
-    @Builder.Default
-    private Boolean isVerified = false; // 인증 완료 여부
+  @Column(name = "is_verified", nullable = false)
+  @Builder.Default
+  private Boolean isVerified = false; // 인증 완료 여부
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt; // 만료 시간 (10분)
+  @Column(name = "expires_at", nullable = false)
+  private LocalDateTime expiresAt; // 만료 시간 (10분)
 
-    // 조회된 사용자 정보 임시 저장
-    @Column(name = "found_username")
-    private String foundUsername; // 찾은 아이디
+  // 조회된 사용자 정보 임시 저장
+  @Column(name = "found_username")
+  private String foundUsername; // 찾은 아이디
 }

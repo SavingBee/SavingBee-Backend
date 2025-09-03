@@ -1,16 +1,11 @@
 package com.project.savingbee.common.repository;
 
 import com.project.savingbee.common.entity.DepositProducts;
-import com.project.savingbee.filtering.dto.ProductSummaryResponse;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -28,13 +23,7 @@ public interface DepositProductsRepository extends JpaRepository<DepositProducts
 
   // 활성 상품을 최신 등록순으로 조회
   List<DepositProducts> findByIsActiveTrueOrderByCreatedAtDesc();
-  
+
   // 활성 상품 조회 (추천 시스템용)
   List<DepositProducts> findByIsActiveTrue();
-
-  @Query("SELECT DISTINCT d FROM DepositProducts d LEFT JOIN FETCH d.interestRates WHERE d.isActive = true")
-  List<DepositProducts> findAllActiveWithInterestRates();
-
-  @Query("SELECT DISTINCT d FROM DepositProducts d LEFT JOIN FETCH d.interestRates LEFT JOIN FETCH d.financialCompany WHERE d.isActive = true")
-  List<DepositProducts> findAllActiveWithInterestRatesAndCompany();
 }

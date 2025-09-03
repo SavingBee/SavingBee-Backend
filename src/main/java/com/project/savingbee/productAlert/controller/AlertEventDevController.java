@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/test/alert-events")
 public class AlertEventDevController {
+
   private final AlertMatchService alertMatchService;
   private final AlertDispatchService alertDispatchService;
 
@@ -42,6 +43,7 @@ public class AlertEventDevController {
 
     AlertDispatchResponseDto r = alertDispatchService.dispatchNow(batchSize);
 
-    return ResponseEntity.ok(new AlertDispatchResponseDto(r.getProcessed(), r.getSent(), r.getFailed()));
+    return ResponseEntity.ok(
+        new AlertDispatchResponseDto(r.getProcessed(), r.getSent(), r.getFailed()));
   }
 }

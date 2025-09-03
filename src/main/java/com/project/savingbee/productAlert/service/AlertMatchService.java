@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AlertMatchService {
+
   private final ProductAlertSettingRepository productAlertSettingRepository;
   private final ProductAlertEventRepository productAlertEventRepository;
   private final DepositProductsRepository depositProductsRepository;
@@ -99,12 +100,15 @@ public class AlertMatchService {
     return created;
   }
 
-  private int scanDeposit(ProductAlertSetting setting, LocalDateTime since, LocalDateTime dispatchAt) {
+  private int scanDeposit(ProductAlertSetting setting, LocalDateTime since,
+      LocalDateTime dispatchAt) {
     int created = 0;
 
     // 후보 선정(예금)
-    List<DepositProducts> deposits = new ArrayList<>(depositProductsRepository.findByUpdatedAtAfter(since));
-    List<String> depCodesByRate = depositInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(since);
+    List<DepositProducts> deposits = new ArrayList<>(
+        depositProductsRepository.findByUpdatedAtAfter(since));
+    List<String> depCodesByRate = depositInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(
+        since);
     if (!depCodesByRate.isEmpty()) {
       deposits.addAll(depositProductsRepository.findByFinPrdtCdIn(depCodesByRate));
     }
@@ -112,12 +116,17 @@ public class AlertMatchService {
 
     // 예금
     for (DepositProducts products : deposits) {
-      if (!seenDeposit.add(products.getFinPrdtCd())) continue;
+      if (!seenDeposit.add(products.getFinPrdtCd())) {
+        continue;
+      }
 
       BigDecimal rate = matchesDeposit(setting, products);
-      if (rate == null) continue;
+      if (rate == null) {
+        continue;
+      }
 
-      FinancialCompanies company = financialCompaniesRepository.findByFinCoNo(products.getFinCoNo());
+      FinancialCompanies company = financialCompaniesRepository.findByFinCoNo(
+          products.getFinCoNo());
 
       LocalDateTime version = versionForDeposit(products, setting);
 
@@ -132,12 +141,15 @@ public class AlertMatchService {
     return created;
   }
 
-  private int scanSavings(ProductAlertSetting setting, LocalDateTime since, LocalDateTime dispatchAt) {
+  private int scanSavings(ProductAlertSetting setting, LocalDateTime since,
+      LocalDateTime dispatchAt) {
     int created = 0;
 
     // 후보 선정(적금)
-    List<SavingsProducts> savings = new ArrayList<>(savingsProductsRepository.findByUpdatedAtAfter(since));
-    List<String> savCodesByRate = savingsInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(since);
+    List<SavingsProducts> savings = new ArrayList<>(
+        savingsProductsRepository.findByUpdatedAtAfter(since));
+    List<String> savCodesByRate = savingsInterestRatesRepository.findDistinctFinPrdtCdUpdatedAfter(
+        since);
     if (!savCodesByRate.isEmpty()) {
       savings.addAll(savingsProductsRepository.findByFinPrdtCdIn(savCodesByRate));
     }
@@ -145,12 +157,14 @@ public class AlertMatchService {
 
     // 적금
     for (SavingsProducts products : savings) {
-      if (!seenSaving.add(products.getFinPrdtCd()))
+      if (!seenSaving.add(products.getFinPrdtCd())) {
         continue;
+      }
 
       BigDecimal rate = matchesSavings(setting, products);
-      if (rate == null)
+      if (rate == null) {
         continue;
+      }
 
       FinancialCompanies company = financialCompaniesRepository.findByFinCoNo(
           products.getFinCoNo());
@@ -171,14 +185,18 @@ public class AlertMatchService {
   // 예금
   private BigDecimal matchesDeposit(ProductAlertSetting setting, DepositProducts product) {
     // 활성 상태 확인
-    if (!Boolean.TRUE.equals(product.getIsActive())) return null;
+    if (!Boolean.TRUE.equals(product.getIsActive())) {
+      return null;
+    }
 
     String prdCode = product.getFinPrdtCd();
     Integer maxSaveTerm = setting.getMaxSaveTerm();
     List<String> intRate = settingTypes(setting);
     Optional<DepositInterestRates> o;
 
-    if (maxSaveTerm == null) return null;  // 기간은 필수 설정 값
+    if (maxSaveTerm == null) {
+      return null;  // 기간은 필수 설정 값
+    }
 
     // 이자계산방식 설정 시
     if (intRate.size() == 1) {
@@ -205,7 +223,8 @@ public class AlertMatchService {
     // 예치 금액 설정값이 상품 값 범위에 포함 되는 지 확인
     if (setting.getMinAmount() != null || setting.getMaxLimit() != null) {
       Long prodMin = product.getMinAmount() != null ? product.getMinAmount().longValue() : 0;
-      Long prodMax = product.getMaxLimit() != null ? product.getMaxLimit().longValue() : Long.MAX_VALUE;
+      Long prodMax =
+          product.getMaxLimit() != null ? product.getMaxLimit().longValue() : Long.MAX_VALUE;
       Long settingMin = toLongExact(setting.getMinAmount());
       Long settingMax = toLongExact(setting.getMaxLimit());
 
@@ -220,14 +239,18 @@ public class AlertMatchService {
   // 적금
   private BigDecimal matchesSavings(ProductAlertSetting setting, SavingsProducts product) {
     // 활성 상태 확인
-    if (!Boolean.TRUE.equals(product.getIsActive())) return null;
+    if (!Boolean.TRUE.equals(product.getIsActive())) {
+      return null;
+    }
 
     String prdCode = product.getFinPrdtCd();
     Integer maxSaveTerm = setting.getMaxSaveTerm();
     List<String> intRate = settingTypes(setting);
     Optional<SavingsInterestRates> o;
 
-    if (maxSaveTerm == null) return null;  // 기간은 필수 설정 값
+    if (maxSaveTerm == null) {
+      return null;  // 기간은 필수 설정 값
+    }
 
     // 이자계산방식 설정 시
     if (intRate.size() == 1) {
@@ -257,21 +280,24 @@ public class AlertMatchService {
 
   // 알림 이벤트를 중복 없이 한 건만 큐에 적재
   private int saveIfAbsent(Long settingId, TriggerType trigger, ProductKind kind,
-      String productCode, String dedupeKey, LocalDateTime sendNotBefore, Supplier<String> payloadBuilder) {
+      String productCode, String dedupeKey, LocalDateTime sendNotBefore,
+      Supplier<String> payloadBuilder) {
 
-    if (productAlertEventRepository.existsByDedupeKey(dedupeKey)) return 0; // dedupeKey 중복으로 적재X
+    if (productAlertEventRepository.existsByDedupeKey(dedupeKey)) {
+      return 0; // dedupeKey 중복으로 적재X
+    }
 
     ProductAlertEvent productAlertEvent = ProductAlertEvent.builder()
-                                            .alertSettingId(settingId)
-                                            .triggerType(trigger)
-                                            .productKind(kind)
-                                            .productCode(productCode)
-                                            .dedupeKey(dedupeKey)
-                                            .status(EventStatus.READY)
-                                            .attempts(0)
-                                            .sendNotBefore(sendNotBefore)
-                                            .payloadJson(payloadBuilder.get())
-                                            .build();
+        .alertSettingId(settingId)
+        .triggerType(trigger)
+        .productKind(kind)
+        .productCode(productCode)
+        .dedupeKey(dedupeKey)
+        .status(EventStatus.READY)
+        .attempts(0)
+        .sendNotBefore(sendNotBefore)
+        .payloadJson(payloadBuilder.get())
+        .build();
     try {
       productAlertEventRepository.save(productAlertEvent);
       return 1;
@@ -284,15 +310,21 @@ public class AlertMatchService {
   private LocalDateTime next9am(LocalDateTime now, ZoneId zone) {
     ZonedDateTime zNow = now.atZone(zone);
     ZonedDateTime nine = zNow.toLocalDate().atTime(9, 0).atZone(zone);
-    if (!zNow.isBefore(nine)) nine = nine.plusDays(1);
+    if (!zNow.isBefore(nine)) {
+      nine = nine.plusDays(1);
+    }
     return nine.toLocalDateTime();
   }
 
   // 이자계산방식(단리/복리) 설정 조건 확인
   private List<String> settingTypes(ProductAlertSetting setting) {
     ArrayList<String> list = new ArrayList<>();
-    if (Boolean.TRUE.equals(setting.getInterestCalcSimple()))   list.add("S");
-    if (Boolean.TRUE.equals(setting.getInterestCalcCompound())) list.add("M");
+    if (Boolean.TRUE.equals(setting.getInterestCalcSimple())) {
+      list.add("S");
+    }
+    if (Boolean.TRUE.equals(setting.getInterestCalcCompound())) {
+      list.add("M");
+    }
     return list;
   }
 
@@ -300,12 +332,16 @@ public class AlertMatchService {
   private boolean contains(Long settingMin, Long settingMax, Long productMin, Long productMax) {
     // 최소 가입금액 설정 시
     if (settingMin != null) {
-      if (settingMin < productMin || settingMin > productMax) return false;
+      if (settingMin < productMin || settingMin > productMax) {
+        return false;
+      }
     }
 
     // 최대 한도 설정 시
     if (settingMax != null) {
-      if (settingMax < productMin || settingMax > productMax) return false;
+      if (settingMax < productMin || settingMax > productMax) {
+        return false;
+      }
     }
 
     return true;
@@ -313,14 +349,18 @@ public class AlertMatchService {
 
   // BigDecimal -> Long 변환
   private static Long toLongExact(BigDecimal v) {
-    if (v == null) return null;
+    if (v == null) {
+      return null;
+    }
 
     return v.longValueExact();
   }
 
   // BigInteger -> Long 변환
   private static Long toLongExact(BigInteger v) {
-    if (v == null) return null;
+    if (v == null) {
+      return null;
+    }
 
     return v.longValueExact();
   }
@@ -330,11 +370,11 @@ public class AlertMatchService {
     Integer term = setting.getMaxSaveTerm();          // 필수(1/3/6/12/24/36)
     var intr = settingTypes(setting);                 // ["S"] or ["M"]; 둘 다 허용이면 필터X
 
-    Optional<DepositInterestRates> latest = (intr.size()==1)
-            ? depositInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInOrderByUpdatedAtDesc(
-            products.getFinPrdtCd(), term, intr)
-            : depositInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmOrderByUpdatedAtDesc(
-                products.getFinPrdtCd(), term);
+    Optional<DepositInterestRates> latest = (intr.size() == 1)
+        ? depositInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInOrderByUpdatedAtDesc(
+        products.getFinPrdtCd(), term, intr)
+        : depositInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmOrderByUpdatedAtDesc(
+            products.getFinPrdtCd(), term);
 
     LocalDateTime optTs = latest.map(DepositInterestRates::getUpdatedAt).orElse(null);
     return maxNonNull(products.getUpdatedAt(), optTs);
@@ -347,7 +387,7 @@ public class AlertMatchService {
 
     Optional<SavingsInterestRates> latest;
 
-    if (intrTypes.size()==1) {
+    if (intrTypes.size() == 1) {
       latest = savingsInterestRatesRepository.findTopByFinPrdtCdAndSaveTrmAndIntrRateTypeInOrderByUpdatedAtDesc(
           products.getFinPrdtCd(), term, intrTypes);
     } else {
@@ -361,8 +401,12 @@ public class AlertMatchService {
 
   // 두 시각 중 더 늦은 것 반환(null 허용)
   private static LocalDateTime maxNonNull(LocalDateTime a, LocalDateTime b) {
-    if (a == null) return b;
-    if (b == null) return a;
+    if (a == null) {
+      return b;
+    }
+    if (b == null) {
+      return a;
+    }
     return a.isAfter(b) ? a : b;
   }
 

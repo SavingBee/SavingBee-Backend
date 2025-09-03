@@ -14,6 +14,7 @@ import lombok.Setter;
 @Setter
 @Builder
 public class AlertSettingsRequestDto {
+
   private AlertType alertType;
 
   private Boolean productTypeDeposit;

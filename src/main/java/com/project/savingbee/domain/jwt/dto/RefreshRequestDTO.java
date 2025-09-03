@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 public class RefreshRequestDTO {
 
-    @NotBlank
-    private String refreshToken;
+  @NotBlank
+  private String refreshToken;
 }

@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties(prefix = "sms")
 public class SmsProperties {
+
   private boolean enabled = false;  // 현재 사용자 정보에 전화번호가 없으므로 SMS 비활성
 
   private String provider = "sens";

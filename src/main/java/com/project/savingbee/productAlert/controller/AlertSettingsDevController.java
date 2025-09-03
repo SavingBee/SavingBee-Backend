@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/dev/alerts/settings")
 public class AlertSettingsDevController {
+
   private final ProductAlertService productAlertService;
   private final UserService userService;
 
   // 특정 사용자 알림 설정 삭제
   @DeleteMapping
-  public ResponseEntity<Void> deleteAlertSettings(@AuthenticationPrincipal UserDetails userDetails) {
+  public ResponseEntity<Void> deleteAlertSettings(
+      @AuthenticationPrincipal UserDetails userDetails) {
     Long userId = userService.findIdByUsername(userDetails.getUsername());
     productAlertService.deleteAlertSettings(userId);
     return ResponseEntity.noContent().build();

@@ -1,19 +1,32 @@
 package com.project.savingbee.common.entity;
 
 import com.project.savingbee.domain.user.entity.UserEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
- * 사용자가 실제 보유하고 있는 예적금 상품 정보를 저장하는 엔티티
- * 추천 시스템의 기준이 되는 핵심 데이터
+ * 사용자가 실제 보유하고 있는 예적금 상품 정보를 저장하는 엔티티 추천 시스템의 기준이 되는 핵심 데이터
  */
 @Entity
 @Table(name = "user_product")
@@ -22,6 +35,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @Builder
 public class UserProduct {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "user_product_id", insertable = false, updatable = false)

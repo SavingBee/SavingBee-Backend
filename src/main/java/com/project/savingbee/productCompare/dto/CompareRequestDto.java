@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CompareRequestDto {
+
   @NotNull
   private String type;  // 예금(D) / 적금(S)
 

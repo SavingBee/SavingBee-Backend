@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class AlertScheduler {
+
   private final AlertMatchService alertMatchService;
   private final AlertDispatchService alertDispatchService;
 
@@ -62,7 +63,9 @@ public class AlertScheduler {
         totalSent += res.getSent();
         totalFailed += res.getFailed();
 
-        if (res.getProcessed() < BATCH_SIZE) break;
+        if (res.getProcessed() < BATCH_SIZE) {
+          break;
+        }
       }
 
       log.info("[ALERT][DISPATCH][{}] processed={} sent={} failed={} elapsedMs={}",

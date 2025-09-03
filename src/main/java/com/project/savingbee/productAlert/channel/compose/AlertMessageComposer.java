@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class AlertMessageComposer {
+
   private final ObjectMapper objectMapper;
 
   public AlertMessage compose(AlertType alertType, ProductAlertEvent event) {
@@ -40,15 +41,15 @@ public class AlertMessageComposer {
     String subject = "[SavingBee] %s 상품 알림 - %s".formatted(type, productName);
 
     String body = """
-            <h3>맞춤 조건에 맞는 상품이 나왔어요!</h3>
-            <ul>
-              <li><b>은행</b> : %s</li>
-              <li><b>상품명</b> : %s</li>
-              <li><b>금리</b> : %s%%</li>
-              <li><b>기간</b> : %s</li>
-              <li><b>확인 시각</b> : %s</li>
-            </ul>
-            """.formatted(bankName, productName, rate, saveTerm, when);
+        <h3>맞춤 조건에 맞는 상품이 나왔어요!</h3>
+        <ul>
+          <li><b>은행</b> : %s</li>
+          <li><b>상품명</b> : %s</li>
+          <li><b>금리</b> : %s%%</li>
+          <li><b>기간</b> : %s</li>
+          <li><b>확인 시각</b> : %s</li>
+        </ul>
+        """.formatted(bankName, productName, rate, saveTerm, when);
 
     return new AlertMessage(to, subject, body);
   }

@@ -14,6 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @JsonInclude(Include.NON_NULL)
 public class SensSmsRequestDto {
+
   private String type;  // SMS / LMS / MMS
   private String contentType; // COMM
   private String from;  // 발신번호
@@ -23,17 +24,20 @@ public class SensSmsRequestDto {
 
   // SMS는 상단 content 사용
   public static SensSmsRequestDto sms(String from, String to, String content) {
-    return new SensSmsRequestDto("SMS", "COMM", from, null, content, List.of(new Message(to, null)));
+    return new SensSmsRequestDto("SMS", "COMM", from, null, content,
+        List.of(new Message(to, null)));
   }
 
   // LMS는 message별 content 사용
   public static SensSmsRequestDto lms(String from, String to, String subject, String content) {
-    return new SensSmsRequestDto("LMS", "COMM", from, subject, null, List.of(new Message(to, content)));
+    return new SensSmsRequestDto("LMS", "COMM", from, subject, null,
+        List.of(new Message(to, content)));
   }
 
   @Getter
   @AllArgsConstructor
   public static class Message {
+
     private String to;
     private String content;
   }

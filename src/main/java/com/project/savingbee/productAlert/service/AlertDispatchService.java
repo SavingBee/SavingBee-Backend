@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AlertDispatchService {
+
   private final ProductAlertEventRepository productAlertEventRepository;
   private final AlertEventStateService alertEventStateService;
   private final ChannelRouter channelRouter;
@@ -33,7 +34,7 @@ public class AlertDispatchService {
    * 배치 전송 1회 수행
    * 대상 : status = READY, sendNotBefore <= now
    * 순서 : 1.조회  2.READY -> SENDING 변경  3. 전송 시도(SENT/FAILED)
-  */
+   */
   @Transactional
   public AlertDispatchResponseDto dispatchNow(int batchSize) {
     LocalDateTime now = LocalDateTime.now();
@@ -46,13 +47,15 @@ public class AlertDispatchService {
     // 발송 후보(READY, FAILED) 조회 (id 순으로 정렬)
     Page<ProductAlertEvent> page =
         productAlertEventRepository.findByStatusInAndSendNotBeforeLessThanEqual(
-        List.of(EventStatus.READY, EventStatus.FAILED), now,
+            List.of(EventStatus.READY, EventStatus.FAILED), now,
             PageRequest.of(0, batchSize, Sort.by(Sort.Order.asc("id")))
         );
 
     for (ProductAlertEvent event : page.getContent()) {
       // READY/FAILED -> SENDING 후 커밋
-      if (!alertEventStateService.toSending(event, now)) continue;
+      if (!alertEventStateService.toSending(event, now)) {
+        continue;
+      }
 
       processed++;
 
@@ -102,7 +105,9 @@ public class AlertDispatchService {
 
   // 에러 메시지가 너무 길 경우 자르기
   private String truncate(String s, int max) {
-    if (s == null) return null;
+    if (s == null) {
+      return null;
+    }
     return s.length() <= max ? s : s.substring(0, max);
   }
 }
