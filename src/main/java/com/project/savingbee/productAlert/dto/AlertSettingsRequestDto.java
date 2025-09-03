@@ -14,6 +14,7 @@ import lombok.Setter;
 @Setter
 @Builder
 public class AlertSettingsRequestDto {
+
   private AlertType alertType;
 
   private Boolean productTypeDeposit;
@@ -32,8 +33,4 @@ public class AlertSettingsRequestDto {
   private BigInteger minAmount;
   @PositiveOrZero
   private BigInteger maxLimit;
-
-  private Boolean rsrvTypeFlexible;
-  private Boolean rsrvTypeFixed;
-
 }

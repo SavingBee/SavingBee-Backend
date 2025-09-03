@@ -1,14 +1,21 @@
 package com.project.savingbee.filtering.dto;
 
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class BaseFilterRequest {
 
   private SortFilter sort;
   private Integer page;
   private Integer size;
+  private String q;
 
   // 공통 편의 메서드들
   // 기본 정렬 설정 메서드
@@ -39,5 +46,10 @@ public abstract class BaseFilterRequest {
 
   public int getPageSize() {
     return size != null ? size : 10;
+  }
+
+  // 검색어 추가
+  public boolean hasSearchTerm() {
+    return q != null && !q.trim().isEmpty();
   }
 }

@@ -51,8 +51,6 @@ class ProductAlertServiceTest {
         .maxSaveTerm(24)
         .minAmount(null)
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(false)
         .createdAt(LocalDateTime.now())
         .updatedAt(null)
         .build();
@@ -73,8 +71,6 @@ class ProductAlertServiceTest {
     assertThat(alertSettingsResponseDto.isInterestCalcSimple()).isFalse();
     assertThat(alertSettingsResponseDto.isInterestCalcCompound()).isTrue();
     assertThat(alertSettingsResponseDto.getMaxSaveTerm()).isEqualTo(24);
-    assertThat(alertSettingsResponseDto.isRsrvTypeFlexible()).isFalse();
-    assertThat(alertSettingsResponseDto.isRsrvTypeFixed()).isFalse();
   }
 
   @Test
@@ -98,18 +94,16 @@ class ProductAlertServiceTest {
     assertThat(alertSettingsResponseDto.getMinInterestRate()).isNull();
     assertThat(alertSettingsResponseDto.isInterestCalcSimple()).isFalse();
     assertThat(alertSettingsResponseDto.isInterestCalcCompound()).isFalse();
-    assertThat(alertSettingsResponseDto.getMaxSaveTerm()).isEqualTo(1);
+    assertThat(alertSettingsResponseDto.getMaxSaveTerm()).isEqualTo(6);
     assertThat(alertSettingsResponseDto.getMinAmount()).isNull();
     assertThat(alertSettingsResponseDto.getMaxLimit()).isNull();
-    assertThat(alertSettingsResponseDto.isRsrvTypeFlexible()).isFalse();
-    assertThat(alertSettingsResponseDto.isRsrvTypeFixed()).isFalse();
     assertThat(alertSettingsResponseDto.getCreatedAt()).isNull();
     assertThat(alertSettingsResponseDto.getUpdatedAt()).isNull();
   }
 
   @Test
   @DisplayName("알림 조건 설정 성공")
-  void successCreateAlertSettings() throws BadRequestException {
+  void successCreateAlertSettings() throws Exception {
       //given
     long userId = 3L;
 
@@ -123,8 +117,6 @@ class ProductAlertServiceTest {
         .maxSaveTerm(12)
         .minAmount(BigInteger.valueOf(1000000))
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(true)
         .build();
 
     given(productAlertSettingRepository.save(any(ProductAlertSetting.class)))
@@ -148,8 +140,6 @@ class ProductAlertServiceTest {
     assertThat(captor.getValue().getMaxSaveTerm()).isEqualTo(12);
     assertThat(captor.getValue().getMinAmount()).isEqualTo(BigInteger.valueOf(1000000));
     assertThat(captor.getValue().getMaxLimit()).isNull();
-    assertThat(captor.getValue().getRsrvTypeFlexible()).isFalse();
-    assertThat(captor.getValue().getRsrvTypeFixed()).isTrue();
 
     // 저장값과 일치하는 지 확인용(일부)
     assertThat(alertSettingsResponseDto.getUserId()).isEqualTo(captor.getValue().getUserId());
@@ -195,8 +185,6 @@ class ProductAlertServiceTest {
         .maxSaveTerm(24)
         .minAmount(null)
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(false)
         .createdAt(LocalDateTime.now())
         .updatedAt(null)
         .build();
@@ -235,8 +223,6 @@ class ProductAlertServiceTest {
     assertThat(captor.getValue().getMaxSaveTerm()).isEqualTo(12);
     assertThat(captor.getValue().getMinAmount()).isEqualTo(BigInteger.valueOf(1000000));
     assertThat(captor.getValue().getMaxLimit()).isNull();
-    assertThat(captor.getValue().getRsrvTypeFlexible()).isFalse();
-    assertThat(captor.getValue().getRsrvTypeFixed()).isFalse();
 
     // 저장값과 일치하는 지 확인용(일부)
     assertThat(alertSettingsResponseDto.getUserId()).isEqualTo(captor.getValue().getUserId());

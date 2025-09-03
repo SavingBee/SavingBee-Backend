@@ -21,7 +21,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/products/filter")
+@RequestMapping("/products/onlyfilter")
 @RequiredArgsConstructor
 public class DepositFilterController {
 
@@ -90,7 +90,7 @@ public class DepositFilterController {
     if (finCoType != null && !finCoType.trim().isEmpty()) {
       List<String> displayNames = FilterParsingUtil.parseStringList(finCoType);
       List<String> codes = FilterMappingUtil.convertFinancialCompanyNamesToCodes(displayNames);
-      filtersBuilder.finCoNo(codes);
+      filtersBuilder.orgTypeCode(codes);
     }
 
     // 가입대상 변환

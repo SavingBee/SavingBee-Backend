@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.savingbee.common.entity.ProductAlertSetting.AlertType;
+import com.project.savingbee.domain.user.service.UserService;
 import com.project.savingbee.productAlert.controller.ProductAlertController;
 import com.project.savingbee.productAlert.dto.AlertSettingsRequestDto;
 import com.project.savingbee.productAlert.dto.AlertSettingsResponseDto;
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,6 +38,9 @@ class ProductAlertControllerTest {
   @MockitoBean
   private ProductAlertService productAlertService;
 
+  @MockitoBean
+  private UserService userService;
+
   @Autowired
   private MockMvc mockMvc;
 
@@ -44,10 +49,13 @@ class ProductAlertControllerTest {
 
   @Test
   @DisplayName("현재 사용자 알림 설정 조회 성공")
+  @WithMockUser(username = "test", roles = "USER")
   void successGetAlertSettings() throws Exception {
       //given
+    Long userId = 3L;
+
     AlertSettingsResponseDto alertSettingsResponseDto = AlertSettingsResponseDto.builder()
-        .userId(3L)
+        .userId(userId)
         .alertType(AlertType.SMS)
         .productTypeDeposit(true)
         .productTypeSaving(false)
@@ -57,17 +65,17 @@ class ProductAlertControllerTest {
         .maxSaveTerm(24)
         .minAmount(null)
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(false)
         .createdAt(LocalDateTime.now())
         .updatedAt(null)
         .build();
 
+    given(userService.findIdByUsername("test")).willReturn(userId);
     given(productAlertService.getAlertSettings(anyLong())).willReturn(alertSettingsResponseDto);
 
       //when
       //then
-    mockMvc.perform(get("/api/alerts/settings?userId=3"))
+    mockMvc.perform(get("/api/alerts/settings")
+            .accept(MediaType.APPLICATION_JSON))
         .andDo(print())
         .andExpect(jsonPath("$.userId").value(3))
         .andExpect(jsonPath("$.alertType").value("SMS"))
@@ -79,8 +87,6 @@ class ProductAlertControllerTest {
         .andExpect(jsonPath("$.maxSaveTerm").value(24))
         .andExpect(jsonPath("$.minAmount", nullValue()))
         .andExpect(jsonPath("$.maxLimit", nullValue()))
-        .andExpect(jsonPath("$.rsrvTypeFlexible").value(false))
-        .andExpect(jsonPath("$.rsrvTypeFixed").value(false))
         .andExpect(jsonPath("$.createdAt", notNullValue()))
         .andExpect(jsonPath("$.updatedAt", nullValue()))
         .andExpect(status().isOk());
@@ -88,8 +94,11 @@ class ProductAlertControllerTest {
 
   @Test
   @DisplayName("알림 조건 설정 성공")
+  @WithMockUser(username = "test", roles = "USER")
   void successCreateAlertSettings() throws Exception {
       //given
+    Long userId = 3L;
+
     AlertSettingsRequestDto alertSettingsRequestDto = AlertSettingsRequestDto.builder()
         .alertType(AlertType.PUSH)
         .productTypeDeposit(true)
@@ -100,12 +109,10 @@ class ProductAlertControllerTest {
         .maxSaveTerm(12)
         .minAmount(BigInteger.valueOf(1000000))
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(true)
         .build();
 
     AlertSettingsResponseDto alertSettingsResponseDto = AlertSettingsResponseDto.builder()
-        .userId(3L)
+        .userId(userId)
         .alertType(AlertType.PUSH)
         .productTypeDeposit(true)
         .productTypeSaving(false)
@@ -115,18 +122,17 @@ class ProductAlertControllerTest {
         .maxSaveTerm(12)
         .minAmount(BigInteger.valueOf(1000000))
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(true)
         .createdAt(LocalDateTime.now())
         .updatedAt(null)
         .build();
 
+    given(userService.findIdByUsername("test")).willReturn(userId);
     given(productAlertService.createAlertSettings(anyLong(), any(AlertSettingsRequestDto.class)))
         .willReturn(alertSettingsResponseDto);
 
       //when
       //then
-    mockMvc.perform(post("/api/alerts/settings?userId=3")
+    mockMvc.perform(post("/api/alerts/settings")
         .contentType(MediaType.APPLICATION_JSON)
         .accept(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(alertSettingsRequestDto)))
@@ -141,11 +147,9 @@ class ProductAlertControllerTest {
         .andExpect(jsonPath("$.maxSaveTerm").value(12))
         .andExpect(jsonPath("$.minAmount").value(BigInteger.valueOf(1000000)))
         .andExpect(jsonPath("$.maxLimit", nullValue()))
-        .andExpect(jsonPath("$.rsrvTypeFlexible").value(false))
-        .andExpect(jsonPath("$.rsrvTypeFixed").value(true))
         .andExpect(jsonPath("$.createdAt", notNullValue()))
         .andExpect(jsonPath("$.updatedAt", nullValue()))
-        .andExpect(status().isOk());
+        .andExpect(status().isCreated());
   }
 
   @Test
@@ -159,7 +163,7 @@ class ProductAlertControllerTest {
 
     //when
     //then
-    mockMvc.perform(post("/api/alerts/settings?userId=3")
+    mockMvc.perform(post("/api/alerts/settings")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(alertSettingsRequestDto)))
@@ -169,8 +173,11 @@ class ProductAlertControllerTest {
 
   @Test
   @DisplayName("알림 조건 수정 성공")
+  @WithMockUser(username = "test", roles = "USER")
   void successUpdateAlertSettings() throws Exception {
       //given
+    Long userId = 3L;
+
     AlertSettingsRequestDto alertSettingsRequestDto = AlertSettingsRequestDto.builder()
         .alertType(AlertType.EMAIL)
         .minInterestRate(BigDecimal.valueOf(2.80))
@@ -179,7 +186,7 @@ class ProductAlertControllerTest {
         .build();
 
     AlertSettingsResponseDto alertSettingsResponseDto = AlertSettingsResponseDto.builder()
-        .userId(3L)
+        .userId(userId)
         .alertType(AlertType.EMAIL)
         .productTypeDeposit(true)
         .productTypeSaving(false)
@@ -189,18 +196,17 @@ class ProductAlertControllerTest {
         .maxSaveTerm(6)
         .minAmount(BigInteger.valueOf(500000))
         .maxLimit(null)
-        .rsrvTypeFlexible(false)
-        .rsrvTypeFixed(true)
         .createdAt(LocalDateTime.now())
         .updatedAt(LocalDateTime.now())
         .build();
 
+    given(userService.findIdByUsername("test")).willReturn(userId);
     given(productAlertService.updateAlertSettings(anyLong(), any(AlertSettingsRequestDto.class)))
         .willReturn(alertSettingsResponseDto);
 
     //when
     //then
-    mockMvc.perform(patch("/api/alerts/settings?userId=3")
+    mockMvc.perform(patch("/api/alerts/settings")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(alertSettingsRequestDto)))
@@ -215,8 +221,6 @@ class ProductAlertControllerTest {
         .andExpect(jsonPath("$.maxSaveTerm").value(6))
         .andExpect(jsonPath("$.minAmount").value(BigInteger.valueOf(500000)))
         .andExpect(jsonPath("$.maxLimit", nullValue()))
-        .andExpect(jsonPath("$.rsrvTypeFlexible").value(false))
-        .andExpect(jsonPath("$.rsrvTypeFixed").value(true))
         .andExpect(jsonPath("$.createdAt", notNullValue()))
         .andExpect(jsonPath("$.updatedAt", notNullValue()))
         .andExpect(status().isOk());
@@ -232,7 +236,7 @@ class ProductAlertControllerTest {
 
     //when
     //then
-    mockMvc.perform(patch("/api/alerts/settings?userId=3")
+    mockMvc.perform(patch("/api/alerts/settings")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(alertSettingsRequestDto)))

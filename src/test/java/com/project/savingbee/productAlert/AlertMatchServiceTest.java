@@ -209,7 +209,7 @@ class AlertMatchServiceTest {
     List<ProductAlertEvent> ev2 = productAlertEventRepository.findAll();
     Map<Long, Long> byUser = ev2.stream()
         .collect(Collectors.groupingBy(ProductAlertEvent::getId, Collectors.counting()));
-    assertThat(byUser).containsEntry(u.getId(), 1L).containsEntry(u2.getId(), 1L);
+    assertThat(byUser).containsEntry(u.getUserId(), 1L).containsEntry(u2.getUserId(), 1L);
 
     //given
     UserEntity u3 = new UserEntity();
@@ -289,8 +289,6 @@ class AlertMatchServiceTest {
     setting.setInterestCalcSimple(Boolean.FALSE);
     setting.setInterestCalcCompound(Boolean.TRUE);
     setting.setMaxSaveTerm(24);
-    setting.setRsrvTypeFixed(null);
-    setting.setRsrvTypeFlexible(null);
     setting.setLastEvaluatedAt(now.minusDays(2));
     setting.setUserEntity(u);
 
@@ -336,8 +334,6 @@ class AlertMatchServiceTest {
     setting2.setInterestCalcSimple(Boolean.FALSE);
     setting2.setInterestCalcCompound(Boolean.TRUE);
     setting2.setMaxSaveTerm(24);
-    setting2.setRsrvTypeFlexible(Boolean.TRUE);
-    setting2.setRsrvTypeFixed(Boolean.FALSE);
     setting2.setLastEvaluatedAt(now.minusDays(2));
     setting2.setUserEntity(u2);
 
@@ -354,7 +350,7 @@ class AlertMatchServiceTest {
     List<ProductAlertEvent> ev2 = productAlertEventRepository.findAll();
     Map<Long, Long> byUser = ev2.stream()
         .collect(Collectors.groupingBy(ProductAlertEvent::getId, Collectors.counting()));
-    assertThat(byUser).containsEntry(u.getId(), 1L).containsEntry(u2.getId(), 1L);
+    assertThat(byUser).containsEntry(u.getUserId(), 1L).containsEntry(u2.getUserId(), 1L);
 
     //given
     UserEntity u3 = new UserEntity();
@@ -374,8 +370,6 @@ class AlertMatchServiceTest {
     setting3.setProductTypeSaving(Boolean.TRUE);
     setting3.setMinInterestRate(new BigDecimal("3.30"));  // 조건에 해당하는 상품 X
     setting3.setMaxSaveTerm(24);
-    setting3.setRsrvTypeFlexible(Boolean.TRUE);
-    setting3.setRsrvTypeFixed(Boolean.FALSE);
     setting3.setLastEvaluatedAt(now.minusDays(2));
     setting3.setUserEntity(u2);
 

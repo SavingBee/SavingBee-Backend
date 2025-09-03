@@ -1,143 +1,149 @@
 package com.project.savingbee.api;
 
-import com.project.savingbee.domain.cart.dto.*;
+import com.project.savingbee.domain.cart.dto.CartPageResponseDTO;
+import com.project.savingbee.domain.cart.dto.CartRequestDTO;
+import com.project.savingbee.domain.cart.dto.CartResponseDTO;
 import com.project.savingbee.domain.cart.service.CartService;
+import com.project.savingbee.domain.user.entity.UserEntity;
+import com.project.savingbee.domain.user.repository.UserRepository;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 장바구니 관리 API 컨트롤러
- * 관심 상품 담기, 조회, 삭제 및 보유 상품과의 비교 분석 기능 제공
+ * 장바구니 관리 API 컨트롤러 관심 상품 담기, 조회, 삭제 기능 제공
  */
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
 @Slf4j
 public class CartController {
-    
-    private final CartService cartService;
-    
-    /**
-     * 1. 목록조회(필터/정렬/페이징): 사용자의 장바구니 상품 목록 조회
-     */
-    @GetMapping
-    public ResponseEntity<CartPageResponseDTO> getCartItems(
-            @ModelAttribute CartRequestDTO request) {
-        Long userId = getCurrentUserId();
-        CartPageResponseDTO response = cartService.getCartItems(userId, request);
-        return ResponseEntity.ok(response);
+
+  private final CartService cartService;
+  private final UserRepository userRepository;
+
+  /**
+   * 1. 목록조회(필터/페이징): 사용자의 장바구니 상품 목록 조회 - 은행명 필터링 지원 - 페이징 처리
+   */
+  @GetMapping
+  public ResponseEntity<CartPageResponseDTO> getCartItems(
+      @ModelAttribute CartRequestDTO request) {
+    log.info("=== Cart GET Request Debug ===");
+    log.info("Request parameters: bankName={}, page={}, size={}",
+        request.getBankName(), request.getPage(), request.getSize());
+
+    Long userId = getCurrentUserId();
+    log.info("Retrieved userId: {}", userId);
+
+    CartPageResponseDTO response = cartService.getCartItems(userId, request);
+    log.info("Response: totalElements={}, contentSize={}",
+        response.getTotalElements(), response.getContent().size());
+
+    return ResponseEntity.ok(response);
+  }
+
+  /**
+   * 2. 담기: 상품을 장바구니에 추가 - 중복 상품 체크 - 상품 정보 자동 조회 및 저장
+   */
+  @PostMapping
+  public ResponseEntity<CartResponseDTO> addToCart(
+      @Validated(CartRequestDTO.AddGroup.class) @RequestBody CartRequestDTO request) {
+    try {
+      log.info("Cart add request: productCode={}, productType={}",
+          request.getProductCode(), request.getProductType());
+
+      Long userId = getCurrentUserId();
+      log.info("Current user ID: {}", userId);
+
+      CartResponseDTO response = cartService.addToCart(userId, request);
+      log.info("Cart item added successfully: cartId={}", response.getCartId());
+
+      return ResponseEntity.status(201).body(response);
+    } catch (IllegalArgumentException e) {
+      log.error("Invalid request for adding to cart: {}", e.getMessage());
+      throw e;
+    } catch (Exception e) {
+      log.error("Unexpected error while adding to cart", e);
+      throw e;
     }
-    
-    /**
-     * 2. 담기: 상품을 장바구니에 추가
-     */
-    @PostMapping
-    public ResponseEntity<CartResponseDTO> addToCart(
-            @Validated(CartRequestDTO.AddGroup.class) @RequestBody CartRequestDTO request) {
-        Long userId = getCurrentUserId();
-        CartResponseDTO response = cartService.addToCart(userId, request);
-        return ResponseEntity.status(201).body(response);
+  }
+
+  /**
+   * 3. 삭제(단건): 개별 상품 삭제
+   */
+  @DeleteMapping("/{cartId}")
+  public ResponseEntity<Map<String, String>> removeFromCart(@PathVariable Long cartId) {
+    Long userId = getCurrentUserId();
+    cartService.removeFromCart(userId, cartId);
+    return ResponseEntity.ok(Map.of("message", "장바구니에서 상품이 삭제되었습니다."));
+  }
+
+  /**
+   * 4. 선택 삭제(복수): 여러 상품 일괄 삭제
+   */
+  @DeleteMapping("/batch")
+  public ResponseEntity<Map<String, Object>> removeMultipleFromCart(
+      @Validated(CartRequestDTO.DeleteMultipleGroup.class) @RequestBody CartRequestDTO request) {
+    Long userId = getCurrentUserId();
+    int deletedCount = cartService.removeMultipleFromCart(userId, request);
+    return ResponseEntity.ok(Map.of(
+        "message", "선택한 상품들이 삭제되었습니다.",
+        "deletedCount", deletedCount
+    ));
+  }
+
+  /**
+   * 5. 전체 비우기: 장바구니 초기화
+   */
+  @DeleteMapping("/clear")
+  public ResponseEntity<Map<String, Object>> clearCart() {
+    Long userId = getCurrentUserId();
+    int deletedCount = cartService.clearCart(userId);
+    return ResponseEntity.ok(Map.of(
+        "message", "장바구니가 비워졌습니다.",
+        "deletedCount", deletedCount
+    ));
+  }
+
+
+  // 현재 사용자 ID 조회 헬퍼 메서드
+  private Long getCurrentUserId() {
+    log.info("=== getCurrentUserId Debug ===");
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    log.info("Authentication object: {}", authentication);
+    log.info("Is authenticated: {}",
+        authentication != null ? authentication.isAuthenticated() : "null");
+
+    if (authentication == null || !authentication.isAuthenticated()) {
+      log.error("Authentication failed - authentication is null or not authenticated");
+      throw new IllegalStateException("인증되지 않은 사용자입니다.");
     }
-    
-    /**
-     * 3. 삭제(단건): 장바구니에서 해당 항목 제거
-     */
-    @DeleteMapping("/{cartId}")
-    public ResponseEntity<Map<String, String>> removeFromCart(@PathVariable Long cartId) {
-        Long userId = getCurrentUserId();
-        cartService.removeFromCart(userId, cartId);
-        return ResponseEntity.ok(Map.of("message", "장바구니에서 상품이 삭제되었습니다."));
-    }
-    
-    /**
-     * 4. 선택 삭제(복수): 선택 항목 일괄 삭제
-     */
-    @DeleteMapping("/batch")
-    public ResponseEntity<Map<String, Object>> removeMultipleFromCart(
-            @Validated(CartRequestDTO.DeleteMultipleGroup.class) @RequestBody CartRequestDTO request) {
-        Long userId = getCurrentUserId();
-        int deletedCount = cartService.removeMultipleFromCart(userId, request);
-        return ResponseEntity.ok(Map.of(
-                "message", "선택한 상품들이 삭제되었습니다.",
-                "deletedCount", deletedCount
-        ));
-    }
-    
-    /**
-     * 5. 전체 비우기: 장바구니 초기화
-     */
-    @DeleteMapping("/clear")
-    public ResponseEntity<Map<String, Object>> clearCart() {
-        Long userId = getCurrentUserId();
-        int deletedCount = cartService.clearCart(userId);
-        return ResponseEntity.ok(Map.of(
-                "message", "장바구니가 비워졌습니다.",
-                "deletedCount", deletedCount
-        ));
-    }
-    
-    /**
-     * 6. 요약/통계: 총 담은 상품 수, 최고 금리
-     */
-    @GetMapping("/summary")
-    public ResponseEntity<CartSummaryDTO> getCartSummary() {
-        Long userId = getCurrentUserId();
-        CartSummaryDTO response = cartService.getCartSummary(userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * 7. 보유 상품과 비교: 장바구니 상품 vs 사용자가 등록한 보유 상품 금리/이자 비교(상위 n개)
-     */
-    @GetMapping("/compare")
-    public ResponseEntity<List<CartComparisonDTO>> compareWithUserProducts(
-            @RequestParam(defaultValue = "5") Integer topN) {
-        Long userId = getCurrentUserId();
-        List<CartComparisonDTO> response = cartService.compareWithUserProducts(userId, topN);
-        return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * 8. 최근 담은 순 정렬
-     */
-    @GetMapping("/recent")
-    public ResponseEntity<List<CartResponseDTO>> getCartItemsByRecent() {
-        Long userId = getCurrentUserId();
-        List<CartResponseDTO> response = cartService.getCartItemsByRecent(userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * 9. 은행명 필터
-     */
-    @GetMapping("/bank/{bankName}")
-    public ResponseEntity<List<CartResponseDTO>> getCartItemsByBank(@PathVariable String bankName) {
-        Long userId = getCurrentUserId();
-        List<CartResponseDTO> response = cartService.getCartItemsByBank(userId, bankName);
-        return ResponseEntity.ok(response);
-    }
-    
-    // 현재 사용자 ID 조회 헬퍼 메서드
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("인증되지 않은 사용자입니다.");
-        }
-        
-        // 실제 프로젝트에서는 JWT 토큰에서 사용자 ID를 추출하는 로직 필요
-        // 현재는 임시로 username을 Long으로 변환 (실제 구현 시 수정 필요)
-        try {
-            return Long.parseLong(authentication.getName());
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("사용자 ID를 확인할 수 없습니다.");
-        }
-    }
+
+    String username = authentication.getName();
+    log.info("Current username from JWT: {}", username);
+    log.info("Authentication principal: {}", authentication.getPrincipal());
+    log.info("Authentication authorities: {}", authentication.getAuthorities());
+
+    // username으로 데이터베이스에서 사용자 조회
+    UserEntity user = userRepository.findByUsername(username)
+        .orElseThrow(() -> {
+          log.error("User not found with username: {}", username);
+          return new IllegalStateException("사용자를 찾을 수 없습니다. Username: " + username);
+        });
+
+    log.info("Found user with ID: {}, username: {}", user.getUserId(), user.getUsername());
+    return user.getUserId();
+  }
 }

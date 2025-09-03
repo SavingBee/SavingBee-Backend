@@ -7,6 +7,7 @@ import com.project.savingbee.productAlert.service.AlertMatchService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/test/alert-events")
 public class AlertEventDevController {
+
   private final AlertMatchService alertMatchService;
   private final AlertDispatchService alertDispatchService;
 
@@ -27,6 +29,13 @@ public class AlertEventDevController {
     return ResponseEntity.ok(new AlertEventScanResponseDto(created, LocalDateTime.now()));
   }
 
+  // 모든 매칭된 알림 이벤트 삭제
+  @DeleteMapping("/all")
+  public ResponseEntity<Void> deleteAllAlertEvents() {
+    alertMatchService.deleteAllAlertEvents();
+    return ResponseEntity.noContent().build();
+  }
+
   // 알림 발송
   @PostMapping("/dispatch-now")
   public ResponseEntity<AlertDispatchResponseDto> dispatchNow(
@@ -34,6 +43,7 @@ public class AlertEventDevController {
 
     AlertDispatchResponseDto r = alertDispatchService.dispatchNow(batchSize);
 
-    return ResponseEntity.ok(new AlertDispatchResponseDto(r.getProcessed(), r.getSent(), r.getFailed()));
+    return ResponseEntity.ok(
+        new AlertDispatchResponseDto(r.getProcessed(), r.getSent(), r.getFailed()));
   }
 }

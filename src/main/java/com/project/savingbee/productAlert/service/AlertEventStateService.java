@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AlertEventStateService {
+
   private final ProductAlertEventRepository productAlertEventRepository;
 
   // READY/FAILED -> SENDING 후 커밋

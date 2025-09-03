@@ -1,14 +1,19 @@
 package com.project.savingbee.filtering.dto;
 
-import java.util.*;
-import lombok.*;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 /**
  * 예금 필터링 검색 요청 - 프론트엔드에서 파라미터로 받은 조건을 정리하여 FilterService에서 사용할 수 있게함
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class DepositFilterRequest extends BaseFilterRequest {
@@ -21,7 +26,7 @@ public class DepositFilterRequest extends BaseFilterRequest {
   @AllArgsConstructor
   public static class Filters {
 
-    private List<String> finCoNo;           // 금융회사 번호들
+    private List<String> orgTypeCode;           // 금융회사 번호들
     private List<String> joinWay;           // 우대조건들
     private List<String> joinDeny;          // 가입제한
     private List<Integer> saveTrm;          // 저축기간
@@ -34,5 +39,26 @@ public class DepositFilterRequest extends BaseFilterRequest {
   // 편의 메서드들
   public boolean hasFilters() {
     return filters != null;
+  }
+
+  // 검색어만 있고 다른 필터 조건은 없는지 체크
+  public boolean hasOnlySearchTerm() {
+    return hasSearchTerm() && isFiltersEmpty();
+  }
+
+  // 모든 필터 조건이 비어있는지 체크
+  private boolean isFiltersEmpty() {
+    if (filters == null) {
+      return true;
+    }
+
+    return (filters.getOrgTypeCode() == null || filters.getOrgTypeCode().isEmpty()) &&
+        (filters.getJoinWay() == null || filters.getJoinWay().isEmpty()) &&
+        (filters.getJoinDeny() == null || filters.getJoinDeny().isEmpty()) &&
+        (filters.getSaveTrm() == null || filters.getSaveTrm().isEmpty()) &&
+        (filters.getIntrRateType() == null || filters.getIntrRateType().isEmpty()) &&
+        filters.getIntrRate() == null &&
+        filters.getIntrRate2() == null &&
+        filters.getMaxLimit() == null;
   }
 }

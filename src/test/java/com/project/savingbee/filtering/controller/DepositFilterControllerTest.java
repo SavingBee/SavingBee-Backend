@@ -47,7 +47,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite"))
+    mockMvc.perform(get("/products/filter/deposit"))
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -69,7 +69,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("finCoType", "은행,저축은행")  // 변경됨
             .param("saveTrm", "12,24")
             .param("sortField", "intr_rate2")
@@ -91,7 +91,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("joinDeny", "제한없음,서민전용")  // 변경됨
             .param("sortField", "intr_rate2")
             .param("sortOrder", "desc"))
@@ -112,7 +112,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("intrRateType", "단리,복리")  // 변경됨
             .param("sortField", "intr_rate2")
             .param("sortOrder", "desc"))
@@ -133,7 +133,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("finCoType", "은행")          // 변경됨
             .param("joinDeny", "제한없음")        // 변경됨
             .param("intrRateType", "단리")       // 변경됨
@@ -159,7 +159,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("joinWay", "비대면가입,첫거래"))
         .andDo(print())
         .andExpect(status().isOk())
@@ -178,7 +178,7 @@ class DepositFilterControllerTest {
     when(depositFilterService.depositFilter(any())).thenReturn(mockPage);
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("page", "2"))
         .andDo(print())
         .andExpect(status().isOk())
@@ -196,7 +196,7 @@ class DepositFilterControllerTest {
         .thenThrow(new IllegalArgumentException("저축기간은 숫자만 입력 가능합니다: invalid,12"));
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite")
+    mockMvc.perform(get("/products/filter/deposit")
             .param("saveTrm", "invalid,12"))
         .andDo(print())
         .andExpect(status().isBadRequest());
@@ -211,7 +211,7 @@ class DepositFilterControllerTest {
         .thenThrow(new RuntimeException("데이터베이스 연결 오류"));
 
     // When & Then
-    mockMvc.perform(get("/products/filter/deposite"))
+    mockMvc.perform(get("/products/filter/deposit"))
         .andDo(print())
         .andExpect(status().isInternalServerError());
   }
