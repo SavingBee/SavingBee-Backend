@@ -8,26 +8,24 @@ import com.project.savingbee.filtering.dto.DepositFilterRequest;
 import com.project.savingbee.filtering.dto.ProductSummaryResponse;
 import com.project.savingbee.filtering.dto.RangeFilter;
 import com.project.savingbee.filtering.enums.PreConMapping;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -38,14 +36,6 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
 
   private final FinancialCompaniesRepository financialCompaniesRepository;
 
-  /**
-   * 예금 필터링 필터링 조건
-   * 금융권역 - 은행, 저축은행, 신협조합
-   * 우대조건 - 비대면 가입, 재예치, 첫 거래, 연령, 실적
-   * 가입대상 - 제한없음, 서민전용, 일부 제한
-   * 저축기간 - 6개월, 12개월, 24개월, 36개월
-   * 이자계산 방식 - 단리, 복리 저축금 기본 금리 - 최저값 ~ 최고값 범위 최고 금리 - 최저값 ~ 최고값 범위
-   */
   public Page<ProductSummaryResponse> depositFilter(DepositFilterRequest request) {
     log.info("예금 필터링 시작 - 조건: {}", request);
 
@@ -484,7 +474,9 @@ public class DepositFilterService extends BaseFilterService<DepositProducts, Dep
       boolean found = financialCompaniesRepository.findById(product.getFinCoNo())
           .map(fc -> filters.getOrgTypeCode().contains(fc.getOrgTypeCode()))
           .orElse(false);
-      if (!found) return false;
+      if (!found) {
+        return false;
+      }
     }
 
     // 다른 필터들도 동일하게 구현...

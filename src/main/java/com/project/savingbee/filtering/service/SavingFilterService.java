@@ -1,10 +1,11 @@
 package com.project.savingbee.filtering.service;
 
 import com.project.savingbee.common.entity.FinancialCompanies;
+import com.project.savingbee.common.entity.SavingsInterestRates;
 import com.project.savingbee.common.entity.SavingsProducts;
 import com.project.savingbee.common.repository.SavingsProductsRepository;
-import com.project.savingbee.common.entity.SavingsInterestRates;
-import com.project.savingbee.filtering.dto.*;
+import com.project.savingbee.filtering.dto.ProductSummaryResponse;
+import com.project.savingbee.filtering.dto.SavingFilterRequest;
 import com.project.savingbee.filtering.enums.PreConMapping;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
@@ -12,7 +13,10 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,12 +33,6 @@ import org.springframework.stereotype.Service;
 public class SavingFilterService extends BaseFilterService<SavingsProducts, SavingFilterRequest> {
 
   private final SavingsProductsRepository savingsProductsRepository;
-
-  /**
-   * 적금 필터링 금융권역 - 은행, 저축은행, 신협조합 우대조건 - 비대면 가입, 재예치, 첫거래, 연령, 실적 가입대상 - 제한 없음, 서민전용, 일부 제한 저축기간 -
-   * 6개월, 12개월, 24개월, 36개월 이자계산 방식 - 단리, 복리 적립방식 - 정액적립식, 자유적립식,전체 월 저축금 총 저축금 기본 금리 - 최저값, 최고값 최고
-   * 금리 - 최저값, 최고값
-   */
 
   public Page<ProductSummaryResponse> savingFilter(SavingFilterRequest request) {
     log.info("적금 필터링 시작 - 조건:{}", request);
@@ -297,7 +295,7 @@ public class SavingFilterService extends BaseFilterService<SavingsProducts, Savi
       jakarta.persistence.criteria.Root<?> root,
       jakarta.persistence.criteria.Join<?, ?> interestRatesJoin,
       jakarta.persistence.criteria.CriteriaBuilder cb,
-      jakarta.persistence.criteria.CriteriaQuery<?> query){
+      jakarta.persistence.criteria.CriteriaQuery<?> query) {
     List<Predicate> predicates = new ArrayList<>();
 
     // 저축기간 조건
