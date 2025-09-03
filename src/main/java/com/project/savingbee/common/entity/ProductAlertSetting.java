@@ -1,12 +1,24 @@
 package com.project.savingbee.common.entity;
 
+import com.project.savingbee.domain.user.entity.UserEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -17,10 +29,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @Builder
 public class ProductAlertSetting {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id; // Key
 
+  @Column(name = "user_id", updatable = false)
   private Long userId; // 사용자 ID
 
   private Boolean productTypeDeposit; // 예금
@@ -34,25 +48,11 @@ public class ProductAlertSetting {
 
   private Boolean interestCalcCompound; // 이자계산방식_복리
 
-  private Boolean rateTypeFixed; // 금리 유형_고정형
-
-  private Boolean rateTypeVariable; // 금리 유형_변동형
-
   private Integer maxSaveTerm; // 예치 기간
 
-  private Boolean joinTypeFixed; // 가입 유형_정기금
+  private BigInteger minAmount; // 최소 가입 금액
 
-  private Boolean joinTypeFlexible; // 가입 유형_자유적립
-
-  private BigDecimal minAmount; // 최소 가입 금액
-
-  private BigDecimal maxLimit; // 최대 한도
-
-  private Boolean rsrvTypeFlexible; // 자유적립
-
-  private Boolean rsrvTypeFixed; // 정액적립
-
-  private Boolean rsrvTypeOnce; // 일시납
+  private BigInteger maxLimit; // 최대 한도
 
   @Enumerated(EnumType.STRING)
   private AlertType alertType; // 알림 유형
@@ -63,10 +63,12 @@ public class ProductAlertSetting {
   @UpdateTimestamp
   private LocalDateTime updatedAt; // 수정일시
 
+  private LocalDateTime lastEvaluatedAt; // 해당 알림 설정이 마지막으로 상품을 비교 확인한 시각
+
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "userId", referencedColumnName = "id", insertable = false, updatable = false)
-  private User user; // 사용자
+  @JoinColumn(name = "user_id", referencedColumnName = "user_id", insertable = false, updatable = false)
+  private UserEntity userEntity; // 사용자
 
   // Enum 정의
   public enum AlertType {

@@ -1,9 +1,29 @@
 package com.project.savingbee.common.repository;
 
 import com.project.savingbee.common.entity.DepositProducts;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DepositProductsRepository extends JpaRepository<DepositProducts, String> {
+public interface DepositProductsRepository extends JpaRepository<DepositProducts, String>,
+    JpaSpecificationExecutor<DepositProducts> {
+
+  // 마지막 스캔 이후 수정된 상품만 조회
+  List<DepositProducts> findByUpdatedAtAfter(LocalDateTime since);
+
+  // 금융상품코드 목록에 해당하는 상품 조회
+  List<DepositProducts> findByFinPrdtCdIn(Collection<String> codes);
+
+  // 상품명으로 검색 - 가입 가능한 상품만
+  List<DepositProducts> findByFinPrdtNmContainingIgnoreCaseAndIsActiveTrue(String finPrdtNm);
+
+  // 활성 상품을 최신 등록순으로 조회
+  List<DepositProducts> findByIsActiveTrueOrderByCreatedAtDesc();
+
+  // 활성 상품 조회 (추천 시스템용)
+  List<DepositProducts> findByIsActiveTrue();
 }

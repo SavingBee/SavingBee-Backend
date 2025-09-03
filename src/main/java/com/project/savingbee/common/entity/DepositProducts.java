@@ -1,14 +1,27 @@
 package com.project.savingbee.common.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.*;
-import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+/**
+ * 예금 상품 엔터티
+ */
 @Entity
 @Getter
 @Setter
@@ -56,8 +69,14 @@ public class DepositProducts {
 
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "finCoNo", referencedColumnName = "finCoNo", insertable = false, updatable = false)
+  @JoinColumn(name = "finCoNo", referencedColumnName = "finCoNo",
+      insertable = false, updatable = false)
   private FinancialCompanies financialCompany; // 금융회사
+
+  // 금융회사 고유번호 가져오기
+  public String getFinCoNo() {
+    return financialCompany != null ? financialCompany.getFinCoNo() : null;
+  }
 
   // 연관관계
   @OneToMany(mappedBy = "depositProduct", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
