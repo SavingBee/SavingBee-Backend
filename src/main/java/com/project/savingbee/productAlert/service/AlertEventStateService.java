@@ -44,4 +44,9 @@ public class AlertEventStateService {
     productAlertEventRepository.saveAll(stuck);
   }
 
+  // SENT/FAILED 커밋
+  @Transactional
+  public void commitStatus(ProductAlertEvent event) {
+    productAlertEventRepository.save(event);
+  }
 }
