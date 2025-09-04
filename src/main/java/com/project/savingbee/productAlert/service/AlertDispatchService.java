@@ -70,6 +70,7 @@ public class AlertDispatchService {
           event.setSendNotBefore(now.plusYears(100));
           event.setLastError("User alerts off");
           failed++;
+          alertEventStateService.commitStatus(event);
           continue;
         }
 
@@ -97,7 +98,7 @@ public class AlertDispatchService {
         failed++;
       }
 
-      productAlertEventRepository.save(event);
+      alertEventStateService.commitStatus(event);
     }
 
     return new AlertDispatchResponseDto(processed, sent, failed);
