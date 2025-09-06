@@ -88,9 +88,7 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of(
         "http://localhost:5173",           // 로컬 프론트엔드
         "http://localhost:3000",           // 로컬 리액트 기본 포트
-        "http://34.64.73.53",             // 서버 IP
-        "https://34.64.73.53",            // HTTPS 서버 IP
-        "https://savingbee.monster"       // 실제 도메인
+        "https://savingbee.monster"       // 실제 도메인만 허용 (보안 강화)
     ));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
     configuration.setAllowedHeaders(List.of("*"));
