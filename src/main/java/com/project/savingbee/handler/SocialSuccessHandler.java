@@ -47,7 +47,7 @@ public class SocialSuccessHandler implements AuthenticationSuccessHandler {
     refreshCookie.setMaxAge(604800); // 7일 (프론트에서 발급 후 바로 헤더 전환 로직 진행 예정)
 
     response.addCookie(refreshCookie);
-    response.sendRedirect("https://savingbee.monster/cookie"); // 이부분에 프론트엔드 서버 주소 등록해야함
+    response.sendRedirect("https://saving-bee.vercel.app/cookie"); // 이부분에 프론트엔드 서버 주소 등록해야함
   }
 
 }

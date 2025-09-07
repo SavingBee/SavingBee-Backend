@@ -88,7 +88,7 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of(
         "http://localhost:5173",           // 로컬 프론트엔드
         "http://localhost:3000",           // 로컬 리액트 기본 포트
-        "https://savingbee.monster"       // 실제 도메인만 허용 (보안 강화)
+        "https://saving-bee.vercel.app"        // 실제 도메인만 허용 (보안 강화)
     ));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
     configuration.setAllowedHeaders(List.of("*"));
