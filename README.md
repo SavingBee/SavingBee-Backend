@@ -25,9 +25,15 @@
 
 <br />
 
-### 프로토타입
+## 프로토타입
 
 [피그마 프로토 타입 확인하기](https://www.figma.com/design/jXjlTzJZHxhG3lS2sIDwpL/%ED%98%91%EC%97%852%EC%A1%B0?node-id=0-1&m=dev&t=pslM6mjntm4ySH2a-1)
+
+<br />
+
+## ERD
+![](https://velog.velcdn.com/images/jiw0707/post/3d657d10-e0fd-4533-9837-cf713c8a9edb/image.png)
+[ERD 확인하기](https://www.erdcloud.com/d/tpoNjD7qyzFXSmRQb)
 
 <br />
 
@@ -36,7 +42,6 @@
 작성한 API는 아래에서 확인할 수 있습니다.
 
 👉🏻 [API 바로보기](https://curse-jade-2cc.notion.site/ebd/23f64e5ed8bc81ef875fef3157275354)
-
 
 <br />
 
