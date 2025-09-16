@@ -47,19 +47,22 @@ public class SocialSuccessHandler implements AuthenticationSuccessHandler {
     
     System.out.println("Final Role for JWT: " + role);
     
-    // JWT(Refresh) 발급
+    // JWT(Access/Refresh) 발급
+    String accessToken = jwtUtil.createJWT(username, role, true);
     String refreshToken = jwtUtil.createJWT(username, role, false);
+    System.out.println("Access token created: " + accessToken.substring(0, Math.min(20, accessToken.length())) + "...");
     System.out.println("Refresh token created: " + refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
     
     // 발급한 Refresh DB 테이블 저장 (Refresh whitelist)
     jwtService.addRefresh(username, refreshToken);
     System.out.println("Refresh token saved to DB");
 
-    // SameSite=None 설정으로 크로스 도메인 쿠키 전송 허용
-    response.setHeader("Set-Cookie", "refreshToken=" + refreshToken +
-            "; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=604800");
+    // 토큰을 쿠키에 임시 저장 (프론트엔드에서 읽을 수 있도록)
+    response.setHeader("Set-Cookie", 
+        "accessToken=" + accessToken + "; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=86400, " +
+        "refreshToken=" + refreshToken + "; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=604800");
     
-    System.out.println("Cookie set, redirecting to frontend...");
+    System.out.println("Tokens set in cookies, redirecting to frontend...");
     response.sendRedirect("https://saving-bee.vercel.app/cookie");
   }
 
