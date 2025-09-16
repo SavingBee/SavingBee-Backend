@@ -35,13 +35,23 @@ public class JwtService {
       throw new RuntimeException("쿠키가 존재하지 않습니다.");
     }
 
-    // Refresh 토큰 획득
+    // Access & Refresh 토큰 획득
+    String accessToken = null;
     String refreshToken = null;
     for (Cookie cookie : cookies) {
-      if ("refreshToken".equals(cookie.getName())) {
+      if ("accessToken".equals(cookie.getName())) {
+        accessToken = cookie.getValue();
+      } else if ("refreshToken".equals(cookie.getName())) {
         refreshToken = cookie.getValue();
-        break;
       }
+    }
+
+    // accessToken이 있으면 그대로 사용, 없으면 refreshToken으로 새로 생성
+    if (accessToken != null && jwtUtil.isValid(accessToken, true)) {
+      // 유효한 accessToken이 있는 경우 - 기존 쿠키 제거
+      clearAuthCookies(response);
+      
+      return new JWTResponseDTO(accessToken, refreshToken);
     }
 
     if (refreshToken == null) {
@@ -73,12 +83,7 @@ public class JwtService {
     refreshRepository.save(newRefreshEntity);
 
     // 기존 쿠키 제거
-    Cookie refreshCookie = new Cookie("refreshToken", null);
-    refreshCookie.setHttpOnly(true);
-    refreshCookie.setSecure(false);
-    refreshCookie.setPath("/");
-    refreshCookie.setMaxAge(10);
-    response.addCookie(refreshCookie);
+    clearAuthCookies(response);
 
     return new JWTResponseDTO(newAccessToken, newRefreshToken);
   }
@@ -142,5 +147,24 @@ public class JwtService {
   @Transactional
   public void removeRefreshUser(String username) {
     refreshRepository.deleteByUsername(username);
+  }
+
+  // 인증 관련 쿠키 제거 헬퍼 메서드
+  private void clearAuthCookies(HttpServletResponse response) {
+    // accessToken 쿠키 제거
+    Cookie accessCookie = new Cookie("accessToken", null);
+    accessCookie.setHttpOnly(true);
+    accessCookie.setSecure(true);
+    accessCookie.setPath("/");
+    accessCookie.setMaxAge(0);
+    response.addCookie(accessCookie);
+
+    // refreshToken 쿠키 제거
+    Cookie refreshCookie = new Cookie("refreshToken", null);
+    refreshCookie.setHttpOnly(true);
+    refreshCookie.setSecure(true);
+    refreshCookie.setPath("/");
+    refreshCookie.setMaxAge(0);
+    response.addCookie(refreshCookie);
   }
 }
